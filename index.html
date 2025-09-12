@@ -13,7 +13,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Noto S
   background:radial-gradient(1200px 600px at 10% -10%,#1b3a9b55 10%,transparent 60%),
              radial-gradient(1000px 500px at 90% 10%,#00ffd555 10%,transparent 60%),
              linear-gradient(160deg,var(--bg1),var(--bg2));min-height:100vh}
-.container{max-width:900px;margin:0 auto;padding:40px 20px 64px}
+.container{max-width:900px;margin:0 auto;padding:40px 20px 80px}
 .header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
 .logo{width:56px;height:56px;border-radius:14px;box-shadow:0 10px 24px #0006;flex:0 0 auto}
 h1{font-size:26px;margin:0 0 2px 0;font-weight:800;letter-spacing:.2px}
@@ -32,12 +32,24 @@ button:hover{filter:brightness(1.05)}button:active{transform:translateY(1px)}
 .i{width:18px;height:18px;border-radius:50%}
 .i.charge{background:#f59e0b}.i.plan{background:#60a5fa}.i.nft{background:#34d399}.i.greet{background:#f472b6}
 @media (max-width:520px){.row{flex-direction:column}button{width:100%}}
+
+/* ===== AL 種類 表示（オシャレ凡例） ===== */
+.section{margin-top:28px}
+.section h2{margin:0 0 12px;font-size:18px;color:var(--muted);letter-spacing:.2px}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.legend-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;background:linear-gradient(180deg,#ffffff10,#00000010);
+  border:1px solid var(--border);backdrop-filter:blur(10px)}
+.legend-title{font-weight:800;letter-spacing:.3px}
+.xchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.xchip{padding:6px 10px;border-radius:999px;background:#ffffff12;border:1px solid var(--chipbd);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:8px}
+.rule{height:1px;background:linear-gradient(90deg,transparent,#ffffff22,transparent);margin:22px 0}
 </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <!-- インラインSVGロゴ（画像ファイル不要） -->
+      <!-- インラインSVGロゴ -->
       <svg class="logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#ffd13a"/><stop offset="1" stop-color="#ffb800"/></linearGradient></defs>
@@ -64,9 +76,51 @@ button:hover{filter:brightness(1.05)}button:active{transform:translateY(1px)}
       <div id="status"></div>
       <div id="out" class="result" style="display:none"></div>
     </div>
+
+    <div class="rule"></div>
+
+    <!-- ▼ AL 種類（凡例） -->
+    <section class="section">
+      <h2>AL の種類</h2>
+      <div class="legend">
+        <div class="legend-card">
+          <span class="i charge"></span>
+          <div>
+            <div class="legend-title">チャージ</div>
+            <div class="xchips"><span class="xchip">確定</span><span class="xchip">早押し</span></div>
+          </div>
+        </div>
+        <div class="legend-card">
+          <span class="i plan"></span>
+          <div>
+            <div class="legend-title">企画</div>
+            <div class="xchips"><span class="xchip">確定</span><span class="xchip">早押し</span></div>
+          </div>
+        </div>
+        <div class="legend-card">
+          <span class="i nft"></span>
+          <div>
+            <div class="legend-title">NFT</div>
+            <div class="xchips"><span class="xchip">確定</span><span class="xchip">早押し</span></div>
+          </div>
+        </div>
+        <div class="legend-card">
+          <span class="i greet"></span>
+          <div>
+            <div class="legend-title">挨拶</div>
+            <div class="xchips">
+              <span class="xchip">確定</span>
+              <span class="xchip">早押し①</span>
+              <span class="xchip">早押し②</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ▲ AL 種類（凡例） -->
   </div>
 
-  <!-- てめーが置いた CSV直読版 app.js を読み込む -->
-  <script src="app.js"></script>
+  <!-- JS はバージョンを上げてキャッシュ殺す -->
+  <script src="app.js?v=5" defer></script>
 </body>
 </html>
