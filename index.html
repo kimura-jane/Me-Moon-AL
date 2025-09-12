@@ -5,52 +5,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Me-Moon AL Checker</title>
 <meta name="color-scheme" content="dark light">
+<meta name="robots" content="noindex,nofollow,noarchive">
 <style>
-:root{
-  --bg1:#0b1635; --bg2:#102b77;
-  --card:#0e1729cc; --border:#ffffff22;
-  --ink:#e8eeff; --muted:#b5c0e6;
-  --accent:#67e8f9; --accent2:#a78bfa;
-  --chip:#ffffff10; --chipbd:#ffffff26;
-}
-*{box-sizing:border-box} html,body{margin:0;padding:0}
-body{
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
-  color:var(--ink);
-  background: radial-gradient(1200px 600px at 10% -10%, #1b3a9b55 10%, transparent 60%),
-              radial-gradient(1000px 500px at 90% 10%, #00ffd555 10%, transparent 60%),
-              linear-gradient(160deg, var(--bg1), var(--bg2));
-  min-height:100vh;
-}
+:root{--bg1:#0b1635;--bg2:#102b77;--card:#0e1729cc;--border:#ffffff22;--ink:#e8eeff;--muted:#b5c0e6;--chip:#ffffff10;--chipbd:#ffffff26}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Noto Sans JP','Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;color:var(--ink);
+  background:radial-gradient(1200px 600px at 10% -10%,#1b3a9b55 10%,transparent 60%),
+             radial-gradient(1000px 500px at 90% 10%,#00ffd555 10%,transparent 60%),
+             linear-gradient(160deg,var(--bg1),var(--bg2));min-height:100vh}
 .container{max-width:900px;margin:0 auto;padding:40px 20px 64px}
 .header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
 .logo{width:56px;height:56px;border-radius:14px;box-shadow:0 10px 24px #0006;flex:0 0 auto}
 h1{font-size:26px;margin:0 0 2px 0;font-weight:800;letter-spacing:.2px}
 .lead{color:var(--muted)}
-.card{
-  backdrop-filter: blur(14px);
-  background: var(--card);
-  border:1px solid var(--border);
-  border-radius:18px;padding:20px;
-  box-shadow:0 18px 42px #0006
-}
+.card{backdrop-filter:blur(14px);background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 18px 42px #0006}
 .row{display:flex;gap:12px;margin-top:10px}
-.input{
-  flex:1;display:flex;align-items:center;gap:10px;
-  background:#ffffff12;border:1px solid var(--border);border-radius:14px;padding:10px 12px
-}
-input[type="text"]{
-  flex:1;background:transparent;border:0;color:var(--ink);font-size:16px;outline:none
-}
-button{
-  padding:12px 16px;border:0;border-radius:14px;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#04121b;font-weight:800;cursor:pointer;letter-spacing:.2px;
-  transition:transform .08s ease,filter .2s ease
-}
-button:hover{filter:brightness(1.05)} button:active{transform:translateY(1px)}
-kbd{background:#00000066;color:#fff;border-radius:8px;padding:2px 8px;font-weight:700;font-size:11px}
-
+.input{flex:1;display:flex;align-items:center;gap:10px;background:#ffffff12;border:1px solid var(--border);border-radius:14px;padding:10px 12px}
+input[type="text"]{flex:1;background:transparent;border:0;color:var(--ink);font-size:16px;outline:none}
+button{padding:12px 16px;border:0;border-radius:14px;background:linear-gradient(135deg,#67e8f9,#a78bfa);
+  color:#04121b;font-weight:800;cursor:pointer;letter-spacing:.2px;transition:transform .08s ease,filter .2s ease}
+button:hover{filter:brightness(1.05)}button:active{transform:translateY(1px)}
 #status{margin-top:8px;color:#fca5a5;font-size:12px;display:none}
 .result{margin-top:16px;padding:16px;border-radius:14px;background:#00000033;border:1px solid var(--border)}
 .tags{margin-top:6px;display:flex;flex-wrap:wrap;gap:8px}
@@ -63,13 +37,10 @@ kbd{background:#00000066;color:#fff;border-radius:8px;padding:2px 8px;font-weigh
 <body>
   <div class="container">
     <div class="header">
-      <!-- インラインSVGロゴ（外部画像不要） -->
+      <!-- インラインSVGロゴ（画像ファイル不要） -->
       <svg class="logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#ffd13a"/><stop offset="1" stop-color="#ffb800"/>
-          </linearGradient>
-        </defs>
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffd13a"/><stop offset="1" stop-color="#ffb800"/></linearGradient></defs>
         <circle cx="32" cy="32" r="30" fill="#0d1b49"/>
         <path d="M42 12a20 20 0 1 0 8 18c-2 3-6 6-12 7-10 1-18-6-19-16 3-7 12-11 23-9z" fill="url(#g)"/>
         <path d="M45 37c-8 6-18 7-25 3 11 6 25 1 31-7-1 2-3 3-6 4z" fill="#36c3ff"/>
@@ -95,67 +66,7 @@ kbd{background:#00000066;color:#fff;border-radius:8px;padding:2px 8px;font-weigh
     </div>
   </div>
 
-<script>
-/* ===== Config ===== */
-const ORDER = ["チャージ確定","チャージ早押し","企画確定","企画早押し","NFT確定","NFT早押し","挨拶確定","挨拶早押し②","挨拶早押し①"];
-const DATA_URL = "data/members.json";
-/* ================== */
-
-const bySlug = new Map();
-const statusEl = document.getElementById("status");
-
-function norm(s){ return (s||"").normalize('NFKC').trim().toLowerCase().replace(/^@/,''); }
-function cat(l){ if(l.startsWith("チャージ")) return "charge"; if(l.startsWith("企画")) return "plan"; if(l.startsWith("NFT")) return "nft"; return "greet"; }
-function tag(l){ return `<span class="tag"><span class="i ${cat(l)}"></span>${l}</span>`; }
-
-async function load(){
-  try{
-    const res = await fetch(DATA_URL + "?_t=" + Date.now(), {cache:"no-store"});
-    if(!res.ok) throw new Error("HTTP " + res.status);
-    const json = await res.json();
-    (json.members||[]).forEach(m=>{
-      const slug = norm(m.slug);
-      const als = Array.isArray(m.als)? m.als.filter(Boolean): [];
-      if(!slug) return;
-      const cur = bySlug.get(slug)||[];
-      bySlug.set(slug, Array.from(new Set([...cur, ...als])));
-    });
-  }catch(e){
-    statusEl.textContent = "データ未設定：data/members.json を配置/修正しろ";
-    statusEl.style.display = "block";
-    console.error(e);
-  }
-}
-
-function lookup(q){
-  const list = bySlug.get(norm(q)) || [];
-  return ORDER.filter(a=>list.includes(a));
-}
-
-function show(q, arr){
-  const out = document.getElementById("out");
-  out.innerHTML = `<div><strong>照会:</strong> <code>${q}</code></div>`;
-  if(arr.length===0){
-    out.insertAdjacentHTML("beforeend", `<div class="tags"><span class="tag">該当なし。slugを確認。</span></div>`);
-  }else{
-    out.insertAdjacentHTML("beforeend", `<div class="tags">${arr.map(tag).join("")}</div>`);
-  }
-  out.style.display = "block";
-}
-
-function go(){
-  const q = document.getElementById("q").value.trim();
-  if(!q) return;
-  show(q, lookup(q));
-  const u = new URL(location.href); u.searchParams.set("q", q); history.replaceState(null,"",u.toString());
-}
-
-window.addEventListener("DOMContentLoaded", async ()=>{
-  await load();
-  document.getElementById("go").addEventListener("click", go);
-  document.getElementById("q").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
-  const init = new URL(location.href).searchParams.get("q"); if(init){ document.getElementById("q").value = init; go(); }
-});
-</script>
+  <!-- てめーが置いた CSV直読版 app.js を読み込む -->
+  <script src="app.js"></script>
 </body>
 </html>
