@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AL Checker | FiNANCiE</title>
+<link rel="stylesheet" href="assets/style.css">
+<meta name="color-scheme" content="dark light">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="assets/logo.jpg" alt="logo">
+      <div>
+        <h1>AL Checker</h1>
+        <div class="lead">slug を入力して対象ALを瞬時に照会。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div>slug を入力して <kbd>Enter</kbd> または <strong>検索</strong>。</div>
+      <div class="row">
+        <label class="input" for="q">
+          <input id="q" type="text" placeholder="例: yamada_taro">
+        </label>
+        <button id="go" aria-label="検索">検索</button>
+      </div>
+      <div class="muted">入力は自動正規化（全角→半角、小文字化、先頭@除去）。</div>
+      <div id="out" class="result" style="display:none"></div>
+    </div>
+
+    <div class="footer">
+      データは <code>data/members.json</code>（<em>slugのみ</em>）を更新。9種：チャージ/企画/NFT/挨拶（確定・早押し）。
+    </div>
+  </div>
+<script src="assets/app.js"></script>
+</body>
+</html>
