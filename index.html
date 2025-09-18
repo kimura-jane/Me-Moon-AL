@@ -8,10 +8,8 @@
 <meta name="robots" content="noindex,nofollow,noarchive">
 <style>
 :root{
-  --bg1:#0b1635;--bg2:#102b77;
-  --card:#0e1729cc;--border:#ffffff22;
-  --ink:#e8eeff;--muted:#b5c0e6;
-  --chip:#ffffff10;--chipbd:#ffffff26;
+  --bg1:#0b1635;--bg2:#102b77;--card:#0e1729cc;--bd:#ffffff22;
+  --ink:#e8eeff;--muted:#b5c0e6;--chip:#ffffff12;--chipbd:#ffffff26
 }
 *{box-sizing:border-box}html,body{margin:0}
 body{
@@ -26,97 +24,54 @@ body{
 .logo{width:56px;height:56px;border-radius:14px;box-shadow:0 10px 24px #0006;flex:0 0 auto}
 h1{font-size:26px;margin:0 0 2px;font-weight:800;letter-spacing:.2px}
 .lead{color:var(--muted)}
-.card{
-  backdrop-filter:blur(14px);background:var(--card);
-  border:1px solid var(--border);border-radius:18px;padding:20px;
-  box-shadow:0 18px 42px #0006
-}
+.card{backdrop-filter:blur(14px);background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:20px;box-shadow:0 18px 42px #0006}
 .row{display:flex;gap:12px;margin-top:10px}
-.input{flex:1;display:flex;align-items:center;gap:10px;background:#ffffff12;border:1px solid var(--border);border-radius:14px;padding:10px 12px}
-input[type="text"]{flex:1;background:transparent;border:0;color:var(--ink);font-size:16px;outline:none}
-button{
-  padding:12px 16px;border:0;border-radius:14px;
-  background:linear-gradient(135deg,#67e8f9,#a78bfa);
-  color:#04121b;font-weight:800;cursor:pointer;letter-spacing:.2px;
-  transition:transform .08s ease,filter .2s ease
-}
+.input{flex:1;display:flex;align-items:center;gap:10px;background:#ffffff12;border:1px solid var(--bd);border-radius:14px;padding:10px 12px}
+input[type="search"]{flex:1;background:transparent;border:0;color:var(--ink);font-size:16px;outline:none}
+button{padding:12px 16px;border:0;border-radius:14px;background:linear-gradient(135deg,#67e8f9,#a78bfa);
+  color:#04121b;font-weight:800;cursor:pointer;letter-spacing:.2px;transition:transform .08s ease,filter .2s ease}
 button:hover{filter:brightness(1.05)}button:active{transform:translateY(1px)}
 #status{margin-top:8px;color:#fca5a5;font-size:12px;display:none}
-
-/* ====== 結果カード（カテゴリ縦・同カテゴリ横） ====== */
-.result{margin-top:16px;padding:16px;border-radius:16px;background:#00000033;border:1px solid var(--border)}
-.result h3{margin:0 0 10px;font-size:16px;letter-spacing:.2px}
-.groups{display:flex;flex-direction:column;gap:10px}
-.group{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:10px 12px;border-radius:14px;
-  background:linear-gradient(180deg,#ffffff0f,#00000010);
-  border:1px solid var(--border)
-}
-.group-head{display:flex;align-items:center;gap:10px;min-width:140px}
-.group-title{font-weight:800;letter-spacing:.3px}
-.chips{display:flex;gap:8px;flex-wrap:nowrap;overflow:auto;scrollbar-width:none}
-.chips::-webkit-scrollbar{display:none}
-.chip{
-  padding:7px 11px;border-radius:999px;background:var(--chip);
-  border:1px solid var(--chipbd);font-size:12.5px;line-height:1;white-space:nowrap;
-  box-shadow:inset 0 0 0 1px #ffffff10
-}
-.i{width:18px;height:18px;border-radius:50%}
-.i.charge{background:#f59e0b}
-.i.nft{background:#34d399}
-.i.guild{background:#a78bfa}
-.i.greet{background:#f472b6}
 @media (max-width:520px){.row{flex-direction:column}button{width:100%}}
 
-/* ===== AL 種類（凡例） ===== */
-.section{margin-top:28px}
-.section h2{margin:0 0 12px;font-size:18px;color:var(--muted);letter-spacing:.2px}
-.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.legend-card{
-  display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;
-  background:linear-gradient(180deg,#ffffff10,#00000010);
-  border:1px solid var(--border);backdrop-filter:blur(10px)
-}
-.legend-title{font-weight:800;letter-spacing:.3px}
-.xchips{display:flex;gap:8px;margin-top:4px}
-.xchip{padding:6px 10px;border-radius:999px;background:#ffffff12;border:1px solid var(--chipbd);font-size:12px}
+.result{margin-top:16px;padding:16px;border-radius:16px;background:#00000033;border:1px solid var(--bd)}
+.result h3{margin:0 0 10px;font-size:16px}
+.groups{display:flex;flex-direction:column;gap:10px}
+.group{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,#ffffff0f,#00000010);border:1px solid var(--bd)}
+.group-head{display:flex;align-items:center;gap:10px;min-width:140px}
+.group-title{font-weight:800}
+.chips{display:flex;gap:8px;flex-wrap:nowrap;overflow:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{padding:7px 11px;border-radius:999px;background:var(--chip);border:1px solid var(--chipbd);font-size:12.5px;line-height:1;white-space:nowrap}
+.i{width:18px;height:18px;border-radius:50%}
+.i.charge{background:#f59e0b}.i.nft{background:#34d399}.i.guild{background:#a78bfa}.i.greet{background:#f472b6}
 .rule{height:1px;background:linear-gradient(90deg,transparent,#ffffff22,transparent);margin:22px 0}
 
-/* ===== みんなのブレ撮り ===== */
-.snap-head{display:flex;align-items:center;justify-content:space-between;margin-top:28px}
-.snap-head h2{margin:0;color:var(--muted);font-size:18px}
-.snap-actions button{background:#ffffff14;border:1px solid var(--border);color:var(--ink)}
-.snap-grid{
-  margin-top:10px;
-  display:grid;gap:10px;
-  grid-template-columns:repeat(auto-fill,minmax(140px,1fr))
-}
-.snap-card{
-  position:relative;overflow:hidden;border-radius:14px;
-  background:#ffffff12;border:1px solid var(--border)
-}
-.snap-card img{
-  width:100%;height:100%;object-fit:cover;display:block;
-  aspect-ratio:1/1;filter:saturate(1.05) contrast(1.04)
-}
-.snap-card::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px #ffffff10}
-.snap-caption{
-  position:absolute;left:8px;bottom:6px;font-size:11px;background:#0009;padding:3px 6px;border-radius:999px
-}
+.section{margin-top:28px}
+.section h2{margin:0 0 12px;font-size:18px;color:var(--muted)}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.legend-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;background:linear-gradient(180deg,#ffffff10,#00000010);border:1px solid var(--bd);backdrop-filter:blur(10px)}
+.legend-title{font-weight:800}
+.xchips{display:flex;gap:8px;margin-top:4px}
+.xchip{padding:6px 10px;border-radius:999px;background:#ffffff12;border:1px solid var(--chipbd);font-size:12px}
+
+/* みんなのブレ撮り（1枚表示） */
+.blur-head{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.blur-head h2{margin:0;color:var(--muted);font-size:18px}
+#blurMsg{margin-top:8px;color:#fca5a5;font-size:12px}
+#blurGrid{margin-top:10px;display:grid;gap:10px}
+.blur-card{position:relative;overflow:hidden;border-radius:14px;background:#ffffff12;border:1px solid var(--bd)}
+.blur-card img{width:100%;height:100%;object-fit:cover;display:block;aspect-ratio:1/1;filter:saturate(1.05) contrast(1.04)}
+.blur-card::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px #ffffff10}
+.blur-cap{position:absolute;left:8px;bottom:6px;font-size:11px;background:#0009;padding:3px 6px;border-radius:999px}
 </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <!-- インラインSVGロゴ -->
-      <svg class="logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
         <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd13a"/><stop offset="1" stop-color="#ffb800"/></linearGradient></defs>
-        <circle cx="32" cy="32" r="30" fill="#0d1b49"/>
-        <path d="M42 12a20 20 0 1 0 8 18c-2 3-6 6-12 7-10 1-18-6-19-16 3-7 12-11 23-9z" fill="url(#g)"/>
-        <path d="M45 37c-8 6-18 7-25 3 11 6 25 1 31-7-1 2-3 3-6 4z" fill="#36c3ff"/>
-        <path d="M35 27l8 3-3 8-8-3z" fill="#ff5a4a"/>
-        <circle cx="40" cy="28" r="2.5" fill="#aee8ff"/>
+        <circle cx="32" cy="32" r="30" fill="#0d1b49"/><path d="M42 12a20 20 0 1 0 8 18c-2 3-6 6-12 7-10 1-18-6-19-16 3-7 12-11 23-9z" fill="url(#g)"/><path d="M45 37c-8 6-18 7-25 3 11 6 25 1 31-7-1 2-3 3-6 4z" fill="#36c3ff"/><path d="M35 27l8 3-3 8-8-3z" fill="#ff5a4a"/><circle cx="40" cy="28" r="2.5" fill="#aee8ff"/>
       </svg>
       <div>
         <h1>Me-Moon AL Checker</h1>
@@ -126,63 +81,45 @@ button:hover{filter:brightness(1.05)}button:active{transform:translateY(1px)}
 
     <div class="card">
       <div class="row">
-        <label class="input" for="q">
-          <input id="q" type="text" placeholder="例: me-moon"
-            inputmode="text" autocapitalize="none" autocorrect="off" spellcheck="false">
+        <label class="input" for="slugInput">
+          <input id="slugInput" type="search" placeholder="例: me-moon" autocomplete="off" autocapitalize="none" spellcheck="false">
         </label>
-        <button id="go" aria-label="検索">検索</button>
+        <!-- どんなUIでも拾えるよう data-action 明示 -->
+        <button id="searchBtn" type="button" data-action="search" aria-label="検索">検索</button>
+        <button id="refreshBtn" type="button" data-action="refresh" aria-label="更新">更新</button>
       </div>
       <div id="status"></div>
-      <div id="out" class="result" style="display:none"></div>
+      <section id="resultBox" class="result" hidden>
+        <h3>照会: <code id="resultSlug"></code></h3>
+        <div id="resultChips" class="groups"></div>
+      </section>
     </div>
 
     <div class="rule"></div>
 
-    <!-- ▼ AL 種類（凡例） -->
+    <!-- AL の種類（凡例） -->
     <section class="section">
       <h2>AL の種類</h2>
       <div class="legend">
-        <div class="legend-card">
-          <span class="i charge"></span>
-          <div>
-            <div class="legend-title">チャージ</div>
-            <div class="xchips"><span class="xchip">AL①</span><span class="xchip">AL②</span></div>
-          </div>
-        </div>
-        <div class="legend-card">
-          <span class="i nft"></span>
-          <div>
-            <div class="legend-title">NFTコラボ</div>
-            <div class="xchips"><span class="xchip">AL①</span><span class="xchip">AL②</span></div>
-          </div>
-        </div>
-        <div class="legend-card">
-          <span class="i guild"></span>
-          <div>
-            <div class="legend-title">ギルドミッション</div>
-            <div class="xchips"><span class="xchip">AL①</span><span class="xchip">AL②</span></div>
-          </div>
-        </div>
-        <div class="legend-card">
-          <span class="i greet"></span>
-          <div>
-            <div class="legend-title">挨拶タップ</div>
-            <div class="xchips"><span class="xchip">AL①</span><span class="xchip">AL②</span></div>
-          </div>
-        </div>
+        <div class="legend-card"><span class="i charge"></span><div><div class="legend-title">チャージ</div><div class="xchips"><span class="xchip">AL①</span><span class="xchip">AL②</span></div></div></div>
+        <div class="legend-card"><span class="i nft"></span><div><div class="legend-title">NFTコラボ</div><div class="xchips"><span class="xchip">AL①</span><span class="xchip">AL②</span></div></div></div>
+        <div class="legend-card"><span class="i guild"></span><div><div class="legend-title">ギルドミッション</div><div class="xchips"><span class="xchip">AL①</span><span class="xchip">AL②</span></div></div></div>
+        <div class="legend-card"><span class="i greet"></span><div><div class="legend-title">挨拶タップ</div><div class="xchips"><span class="xchip">AL①</span><span class="xchip">AL②</span></div></div></div>
       </div>
     </section>
 
-    <!-- ▼ みんなのブレ撮り -->
-    <section class="section" id="snaps">
-      <div class="snap-head">
+    <!-- みんなのブレ撮り（1枚ランダム） -->
+    <section class="section">
+      <div class="blur-head">
         <h2>みんなのブレ撮り</h2>
-        <div class="snap-actions"><button id="shuffle">更新</button></div>
+        <button id="refreshBtn2" type="button" data-action="refresh" aria-label="更新">更新</button>
       </div>
-      <div id="snaps-grid" class="snap-grid"></div>
+      <p id="blurMsg" hidden></p>
+      <div id="blurGrid"></div>
     </section>
   </div>
 
-  <script src="app.js?v=12" defer></script>
+  <!-- defer 1本だけ。キャッシュ殺しは ?v=24 を適宜上げる -->
+  <script src="app.js?v=24" defer></script>
 </body>
 </html>
