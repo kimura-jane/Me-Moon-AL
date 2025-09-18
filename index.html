@@ -1,100 +1,135 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Me-Moon AL Checker</title>
   <style>
     :root{
-      --bg1:#0a1a2b; --bg2:#0f2641; --panel:#0e2238; --panel2:#0b1b2d;
-      --text:#eaf4ff; --muted:#98a9c0; --chip:#1b2f4a; --chipStroke:#2a405f;
-      --grad1:#8ee7ff; --grad2:#bfa7ff; --ok:#ffc24b; --nft:#33de8b; --guild:#b389ff; --hello:#ff8ec4;
+      --bg:#071a2b;--panel:#0e253a;--card:#122a41;--ink:#e8f1ff;
+      --muted:#9fb3c9;--radius:18px;--radius-sm:14px;--chip:#1a3550;
+      --gradA:#8be2ff;--gradB:#b79bff;--ring:rgba(255,255,255,.08);
     }
     *{box-sizing:border-box}
-    html,body{margin:0;background:radial-gradient(1200px 700px at 20% -10%,#14486633,transparent) , linear-gradient(180deg,var(--bg1),var(--bg2)); color:var(--text); font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;}
-    .wrap{max-width:880px;margin:24px auto;padding:0 16px 48px}
-    header{display:flex;gap:14px;align-items:center;margin-bottom:18px}
-    header h1{font-size:28px;line-height:1.1;margin:0}
-    header p{margin:2px 0 0;color:var(--muted)}
-    .card{background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid #1b314f; border-radius:18px; box-shadow:0 10px 30px #00000044; padding:18px}
-    .input{width:100%;background:#0b1a2a;border:1px solid #1a3150;border-radius:14px;color:var(--text);height:56px;padding:0 16px;font-size:18px}
-    .bar{display:flex;flex-direction:column;gap:14px}
-    .btn{height:52px;border:0;border-radius:14px;color:#071221;font-weight:700;font-size:16px;background:linear-gradient(90deg,var(--grad1),var(--grad2));}
-    .btn:active{transform:translateY(1px);opacity:.92}
-    .sectionTitle{font-size:22px;margin:30px 0 14px}
-    /* Result panel */
-    #resultPanel{margin-top:14px}
-    #resultTitle{color:var(--muted);margin:0 0 8px}
-    .chips{display:flex;flex-wrap:wrap;gap:12px}
-    .chip{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:var(--chip);border:1px solid var(--chipStroke); color:var(--text); box-shadow:inset 0 -2px 0 #00000022}
-    .dot{width:12px;height:12px;border-radius:50%}
-    /* AL list */
-    .alList{display:grid;gap:16px}
-    .alCard{background:linear-gradient(180deg,#0f2238,#0b1a2c);border:1px solid #1a2e4a;border-radius:18px;padding:18px}
-    .alHead{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-    .alName{font-size:20px;font-weight:700;letter-spacing:.02em}
-    .alChips{display:flex;gap:12px;flex-wrap:wrap}
-    .oval{padding:9px 16px;border-radius:999px;background:#162741;border:1px solid #2a405f;color:#cfe2ff}
-    /* Bure photo */
-    #bureHead{display:flex;align-items:center;justify-content:space-between;margin-top:34px}
-    #refreshBlurBtn{width:160px}
-    #bureCard{margin-top:14px;overflow:hidden;border-radius:20px;background:#0b1726;border:1px solid #1b2f4a}
-    #bureImg{width:100%;display:block;aspect-ratio:4/3;object-fit:cover}
-    #bureCaption{position:relative;display:inline-block;margin:10px 14px;padding:6px 10px;border-radius:10px;background:rgba(9,16,28,.7);backdrop-filter:blur(6px); border:1px solid #2a405f; color:#eaf2ff; font-size:14px}
-    /* glitch text effect */
-    .glitch{animation:gl 600ms steps(12) 1}
-    @keyframes gl{
-      0% { text-shadow: -2px -1px 0 #ff3e, 2px 1px 0 #3ef; transform:translate(0,0) }
-      20%{ text-shadow: 3px 0 0 #ff3e, -3px 0 0 #3ef; transform:translate(-.5px,.5px) }
-      40%{ text-shadow: -4px 0 0 #ff3e, 4px 0 0 #3ef; transform:translate(.4px,-.4px) }
-      60%{ text-shadow: 2px 1px 0 #ff3e, -2px -1px 0 #3ef; transform:translate(-.3px,.3px) }
-      80%{ text-shadow: -3px -1px 0 #ff3e, 3px 1px 0 #3ef; transform:translate(.3px,-.3px) }
-      100%{ text-shadow:none; transform:none }
+    html,body{height:100%}
+    body{
+      margin:0;background:radial-gradient(1200px 800px at 10% -10%,#133b54 0,#0b2033 45%,#071a2b 70%) fixed var(--bg);
+      color:var(--ink);font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      -webkit-font-smoothing:antialiased;line-height:1.45;
     }
-    /* helpers */
+    .wrap{max-width:900px;margin:24px auto 80px;padding:0 16px}
+    .hero{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+    .logo{width:56px;height:56px;border-radius:16px;background:
+      radial-gradient(circle at 30% 30%,#ffd24d 0 56%,transparent 57%),
+      radial-gradient(circle at 67% 44%,#0a1a2b 0 66%,transparent 67%),
+      radial-gradient(circle at 74% 58%,#f96ea7 0 22%,transparent 23%),
+      #0c2134;
+      box-shadow:0 6px 24px rgba(0,0,0,.35);
+    }
+    h1{margin:0;font-size:28px;letter-spacing:.4px}
+    .sub{margin:2px 0 0;color:var(--muted);font-size:14px}
+
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)) var(--panel);
+      border-radius:var(--radius);padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.35) inset,0 12px 40px var(--ring)}
+    .stack{display:flex;flex-direction:column;gap:14px}
+    .input{
+      width:100%;padding:16px 18px;border-radius:14px;background:#0b2134;color:var(--ink);
+      border:1px solid rgba(255,255,255,.08);font-size:18px;outline:none
+    }
+    .btn{
+      appearance:none;border:0;border-radius:14px;padding:16px 18px;color:#08121d;
+      font-weight:800;letter-spacing:.08em;font-size:15px;
+      background:linear-gradient(90deg,var(--gradA),var(--gradB));
+      cursor:pointer;box-shadow:0 6px 20px rgba(79,160,255,.25), inset 0 0 0 1px rgba(255,255,255,.25);
+      transition:transform .04s ease-out
+    }
+    .btn:active{transform:translateY(1px)}
+    .section{margin-top:22px}
+    .section h2{margin:0 0 10px;font-size:18px;letter-spacing:.12em;color:#cfe5ff}
+
+    .result{border-radius:var(--radius);background:rgba(255,255,255,.02);padding:14px 12px}
+    .cards{display:flex;flex-direction:column;gap:14px}
+    .card{
+      background:var(--card);border-radius:16px;padding:16px 14px;position:relative;
+      box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 10px 30px rgba(0,0,0,.25)
+    }
+    .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .dot{width:12px;height:12px;border-radius:50%}
+    .title{font-size:20px;font-weight:800;letter-spacing:.12em;margin-right:auto}
+
+    .chips{display:flex;gap:10px}
+    .chip{
+      background:var(--chip);color:#d6e7ff;border:1px solid rgba(255,255,255,.15);
+      border-radius:9999px;padding:10px 16px;font-weight:800;letter-spacing:.12em
+    }
+    .chip.ok{background:#173f2c;border-color:#3bd188;color:#bafad1}
+    .chip.ng{background:#3a1f2c;border-color:#f37a9b;color:#ffd7e2}
+
     .muted{color:var(--muted)}
-    .space{height:20px}
+    .hidden{display:none}
+
+    /* みんなのブレ撮り */
+    .blur-wrap{margin-top:28px}
+    .blur-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .hint{font-size:12px;color:var(--muted)}
+    .shot{
+      background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)) var(--card);
+      border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35)
+    }
+    .shot img{width:100%;height:auto;display:block}
+    .cap{
+      position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.42);
+      color:#eef6ff;padding:6px 10px;border-radius:10px;font-size:13px;backdrop-filter:blur(2px)
+    }
+    .cap.motion-blur{
+      text-shadow:
+        0 0 0 currentColor,
+        2px 0 0 rgba(255,255,255,.15),
+        4px 0 0 rgba(255,255,255,.1),
+        6px 0 0 rgba(255,255,255,.06);
+      filter:blur(.2px)
+    }
+    .shot-box{position:relative}
+    footer{margin:26px 0 0;color:var(--muted);font-size:12px;text-align:center}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <div style="width:48px;height:48px;border-radius:14px;background:radial-gradient(circle at 30% 30%,#ffd12e 0 40%,transparent 41%),#0e2a44;border:1px solid #24466f;"></div>
+    <div class="hero">
+      <div class="logo" aria-hidden="true"></div>
       <div>
         <h1>Me-Moon AL Checker</h1>
-        <p>slugを入力して検索</p>
+        <div class="sub">slug を入力して検索</div>
       </div>
-    </header>
+    </div>
 
-    <section class="card">
-      <div class="bar">
-        <input id="slugInput" class="input" autocomplete="off" placeholder="例）me-moon / kimura_jane など">
-        <button id="searchBtn" class="btn" type="button">検索</button>
+    <div class="panel">
+      <div class="stack">
+        <input id="slug" class="input" type="text" inputmode="latin" autocomplete="off" placeholder="slug を入力" />
+        <button id="searchBtn" type="button" class="btn">検索</button>
       </div>
 
-      <div id="resultPanel" class="card" style="margin-top:16px">
-        <p id="resultTitle" class="muted">照会: <span id="q">-</span></p>
-        <div id="resultBody">
-          <div class="muted">該当なし。slugを確認。</div>
+      <div class="section">
+        <h2>照会結果</h2>
+        <div id="resultBox" class="result">
+          <div id="resultMsg" class="muted">未検索です。</div>
+          <div id="cards" class="cards hidden"></div>
         </div>
       </div>
-    </section>
 
-    <h2 class="sectionTitle">AL の種類</h2>
-    <div id="alList" class="alList"></div>
-
-    <div id="bureHead">
-      <h2 class="sectionTitle" style="margin:0">みんなのブレ撮り</h2>
-      <button id="refreshBlurBtn" class="btn" type="button">更新</button>
+      <div class="section blur-wrap">
+        <div class="blur-head">
+          <h2>みんなのブレ撮り</h2>
+          <button id="blurRefreshBtn" type="button" class="btn" style="padding:10px 14px;font-size:14px">更新</button>
+        </div>
+        <div id="blurBox" class="shot hidden"></div>
+        <div class="hint">毎回ランダムに1枚表示。キャプションをタップで“文字ブレ”。</div>
+      </div>
     </div>
-    <figure id="bureCard" class="card" style="padding:0">
-      <img id="bureImg" alt="">
-      <figcaption id="bureCaption" title="タップで文字ブレ">-</figcaption>
-    </figure>
 
-    <div class="space"></div>
+    <footer>© Me-Moon</footer>
   </div>
 
-  <script src="app.js" defer></script>
+  <script src="app.js?v=26" defer></script>
 </body>
 </html>
