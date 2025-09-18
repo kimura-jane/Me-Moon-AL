@@ -1,181 +1,177 @@
-/* app.js — v26 */
+/* app.js – v26 (fix: keep first row unless it's a header) */
 (() => {
   "use strict";
 
   // ===== Config =====
   const FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU";
 
-  // 表示カードとスプシの対応
-  const MAP = [
-    { key: "charge", chip1: "chip-charge-1", chip2: "chip-charge-2",
-      sheet1: "チャージAL①", sheet2: "チャージAL②" },
-    { key: "nft",    chip1: "chip-nft-1",    chip2: "chip-nft-2",
-      sheet1: "NFTコラボAL①", sheet2: "NFTコラボAL②" },
-    { key: "guild",  chip1: "chip-guild-1",  chip2: "chip-guild-2",
-      sheet1: "ギルドミッションAL①", sheet2: "ギルドミッションAL②" },
-    { key: "hello",  chip1: "chip-hello-1",  chip2: "chip-hello-2",
-      sheet1: "挨拶タップAL①", sheet2: "挨拶タップAL②" },
-  ];
+  // 各カテゴリとシート名の対応（タブ名そのまま）
+  const MAP = {
+    charge:  ["チャージAL①","チャージAL②"],
+    nft:     ["NFTコラボAL①","NFTコラボAL②"],
+    guild:   ["ギルドミッションAL①","ギルドミッションAL②"],
+    hello:   ["挨拶タップAL①","挨拶タップAL②"],
+  };
 
-  // ===== dom =====
-  const $ = (s, r = document) => r.querySelector(s);
-  const slugInput = $("#slug");
-  const who = $("#who");
+  // 結果バッジ（HTML 側の id はこの想定で付いている前提：chip-<key>-<1|2>）
+  const CHIPS = {
+    "charge-1": el("#chip-charge-1"),
+    "charge-2": el("#chip-charge-2"),
+    "nft-1":    el("#chip-nft-1"),
+    "nft-2":    el("#chip-nft-2"),
+    "guild-1":  el("#chip-guild-1"),
+    "guild-2":  el("#chip-guild-2"),
+    "hello-1":  el("#chip-hello-1"),
+    "hello-2":  el("#chip-hello-2"),
+  };
 
-  // ===== utils: slug normalizer / matcher =====
-  const HYPHENS = /[‐-‒–—―ー−]/g; // 全ハイフン類
-  const SPLIT_MULTI = /[,/／|｜\s]+/; // 複数書き対応
+  // UI
+  const $q      = el("#q");                  // 検索入力
+  const $search = el("#btn-search");         // 検索ボタン
+  const $who    = el("#who");                // 「照会: xxx」表示
+  const $msg    = el("#msg");                // 結果メッセージ
 
-  function norm(s) {
-    if (!s) return "";
-    return String(s)
+  // ===== helpers =====
+  function el(sel, root = document){ return root.querySelector(sel); }
+  function cls(node, on){ node?.classList[on ? "add" : "remove"]("is-on"); node?.classList[on ? "remove" : "add"]("is-off"); }
+
+  // 全角/半角、大小、不要空白、ハイフン類を吸収
+  function norm(s){
+    if(!s) return "";
+    const t = String(s)
       .normalize("NFKC")
       .trim()
       .toLowerCase()
-      .replace(/^@+/, "")      // 先頭@除去
-      .replace(HYPHENS, "-")   // 全角ハイフン類→-
-      .replace(/\s+/g, "");    // 空白除去
+      .replace(/\s+/g,"") // 全空白除去（シートに紛れる NBSP 等も吸収）
+      .replace(/[\u2010-\u2015\u2212\u30FC\uFF0D_]+/g,"-"); // 各種ハイフン/長音/全角マイナス/アンダーを "-"
+    return t;
   }
 
-  function variants(s) {
-    const n = norm(s);
-    return new Set([n, n.replace(/_/g, "-"), n.replace(/-/g, "_")]);
+  // CSV を素朴にパース（今回 A列だけ使うので十分）
+  function parseCsv(text){
+    return text.split(/\r?\n/).map(l => {
+      // いちおう囲み対応（値にカンマは基本無い想定）
+      const m = l.match(/^"(.*)"\s*$/);
+      const line = m ? m[1] : l;
+      return line.split(",").map(c => c.replace(/^"|"$/g,""));
+    });
   }
 
-  function matchesCell(cell, input) {
-    if (!cell) return false;
-    const cand = variants(input);
-    const parts = String(cell).split(SPLIT_MULTI);
-    for (const p of parts) {
-      if (cand.has(norm(p))) return true;
-    }
-    return false;
-  }
-
-  // ===== CSV fetcher =====
-  async function fetchSheet(slugSheetName) {
-    const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq` +
-      `?tqx=out:csv&sheet=${encodeURIComponent(slugSheetName)}&t=${Date.now()}`;
+  // 1シート取得 → slug 配列（A列）を返す
+  async function getList(sheetName){
+    const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
     const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(slugSheetName + " fetch failed");
+    if(!res.ok) throw new Error(`fetch failed: ${sheetName}`);
     const csv = await res.text();
-    return parseCSV(csv); // 2次元配列
-  }
+    const rows = parseCsv(csv).map(r => (r[0] ?? "").trim()).filter(Boolean);
 
-  // 簡易CSVパーサ（ダブルクオート対応）
-  function parseCSV(text) {
-    const out = [];
-    let row = [], field = "", q = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i], n = text[i + 1];
-      if (q) {
-        if (c === '"' && n === '"') { field += '"'; i++; }
-        else if (c === '"') { q = false; }
-        else { field += c; }
-      } else {
-        if (c === '"') q = true;
-        else if (c === ",") { row.push(field); field = ""; }
-        else if (c === "\n") { row.push(field); out.push(row); row = []; field = ""; }
-        else if (c === "\r") { /* skip */ }
-        else { field += c; }
+    // ★ ここが修正点：先頭行は「ヘッダーらしければ」だけ捨てる
+    if (rows.length) {
+      const head = norm(rows[0]);
+      if (/^(slug|name|ユーザー|wallet|address|アドレス)$/i.test(head)) {
+        rows.shift();
       }
     }
-    row.push(field); out.push(row);
-    return out;
+    return rows.map(norm);
   }
 
-  // ===== AL 判定 =====
-  async function judgeAll(slugInputRaw) {
-    const inputShown = slugInputRaw || "";
-    const slugQ = inputShown;
-    who.textContent = slugQ ? `照会: ${slugQ}` : "未検索です。";
+  // 指定 slug が各 AL に含まれるかをまとめて判定
+  async function judge(slug){
+    const s = norm(slug);
+    if(!s) return {
+      charge:[false,false], nft:[false,false], guild:[false,false], hello:[false,false]
+    };
 
-    // まず全部OFF表示に戻す
-    for (const m of MAP) {
-      setOnOff($("#" + m.chip1), false);
-      setOnOff($("#" + m.chip2), false);
-    }
-    if (!slugQ) return;
+    const res = { charge:[false,false], nft:[false,false], guild:[false,false], hello:[false,false] };
 
-    // 各シートを取りに行って照合
+    // 2並列×4カテゴリ＝8枚をまとめて取得
     const tasks = [];
-    for (const m of MAP) {
-      tasks.push(
-        (async () => {
-          const [rows1, rows2] = await Promise.all([fetchSheet(m.sheet1), fetchSheet(m.sheet2)]);
-          const hit1 = sheetHas(rows1, slugQ);
-          const hit2 = sheetHas(rows2, slugQ);
-          setOnOff($("#" + m.chip1), !!hit1);
-          setOnOff($("#" + m.chip2), !!hit2);
-        })()
-      );
+    const keys = [];
+    for (const key of Object.keys(MAP)){
+      MAP[key].forEach((sheet, idx) => {
+        tasks.push(getList(sheet));
+        keys.push([key, idx]);
+      });
     }
-    try { await Promise.all(tasks); }
-    catch (e) { console.warn(e); }
+    const lists = await Promise.all(tasks);
+
+    lists.forEach((list, i) => {
+      const [key, idx] = keys[i];
+      // そのまま一致 or ハイフン⇄アンダーをさらに吸収（保険）
+      const hit = list.includes(s) || list.includes(s.replace(/-/g,"_")) || list.includes(s.replace(/_/g,"-"));
+      res[key][idx] = !!hit;
+    });
+
+    return res;
   }
 
-  function sheetHas(rows, query) {
-    if (!rows || !rows.length) return false;
-    // 1行目はヘッダ想定。A列（0番）にslug
-    for (let i = 1; i < rows.length; i++) {
-      if (matchesCell(rows[i][0], query)) return true;
-    }
-    return false;
-  }
+  // バッジ表示
+  function render(result){
+    // 先に全部 OFF
+    Object.values(CHIPS).forEach(node => cls(node, false));
 
-  function setOnOff(el, on) {
-    if (!el) return;
-    el.classList.toggle("on", on);
-    el.classList.toggle("off", !on);
-  }
+    // 反映
+    cls(CHIPS["charge-1"], result.charge[0]);
+    cls(CHIPS["charge-2"], result.charge[1]);
+    cls(CHIPS["nft-1"],    result.nft[0]);
+    cls(CHIPS["nft-2"],    result.nft[1]);
+    cls(CHIPS["guild-1"],  result.guild[0]);
+    cls(CHIPS["guild-2"],  result.guild[1]);
+    cls(CHIPS["hello-1"],  result.hello[0]);
+    cls(CHIPS["hello-2"],  result.hello[1]);
 
-  // ===== みんなのブレ撮り =====
-  let blurImages = null;
-
-  async function loadBlurManifest(force = false) {
-    if (blurImages && !force) return blurImages;
-    const url = `blurs/manifest.json?t=${Date.now()}`;
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error("manifest missing");
-    const data = await res.json();
-    blurImages = Array.isArray(data.images) ? data.images : [];
-    return blurImages;
-  }
-
-  function pickRandom(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  async function showRandomBlur(forceReload = false) {
-    const frame = $("#blurFrame"), img = $("#blurImg"), cap = $("#blurCap"), err = $("#blurErr");
-    err.hidden = true;
-    frame.hidden = true;
-
-    try {
-      const list = await loadBlurManifest(forceReload);
-      if (!list.length) throw new Error("no images");
-      const it = pickRandom(list);
-      const file = typeof it === "string" ? it : it.file;
-      const author = (it.author || it.name || it.user || "").toString();
-      const date = (it.date || "").toString();
-      img.src = `blurs/${file}`;
-      img.alt = author ? `${author} ${date}` : file;
-      cap.textContent = author || date ? `${author}${author && date ? " / " : ""}${date}` : file;
-      cap.classList.remove("active");
-      frame.hidden = false;
-    } catch (e) {
-      console.warn(e);
-      err.hidden = false;
-    }
+    // 1つもヒットしなければメッセージ表示、あれば消す
+    const any = Object.values(result).some(pair => pair[0] || pair[1]);
+    $msg.textContent = any ? "" : "該当なし。slugを確認。";
+    $msg.style.display = any ? "none" : "";
   }
 
   // ===== events =====
-  $("#btnSearch").addEventListener("click", () => judgeAll(slugInput.value));
-  slugInput.addEventListener("keydown", (e) => { if (e.key === "Enter") judgeAll(slugInput.value); });
+  async function onSearch(){
+    const v = $q.value || "";
+    $who.textContent = `照会: ${v}`;
+    $msg.textContent = "検索中...";
+    $msg.style.display = "";
 
-  $("#btnRefresh").addEventListener("click", () => showRandomBlur(true));
-  $("#blurCap").addEventListener("click", (e) => e.currentTarget.classList.toggle("active"));
+    try{
+      const r = await judge(v);
+      render(r);
+    }catch(err){
+      console.error(err);
+      $msg.textContent = "読み込みエラー。時間をおいて再実行。";
+      $msg.style.display = "";
+    }
+  }
 
-  // 初期表示
-  showRandomBlur(false);
+  $search?.addEventListener("click", onSearch);
+  $q?.addEventListener("keydown", (e)=>{ if(e.key === "Enter") onSearch(); });
+
+  // 初期：入力値があれば自動検索
+  if ($q && $q.value?.trim()) onSearch();
+
+  // ===== ぶれ撮り（既存のまま）=====
+  const $blurImg = el("#blur-img");
+  const $blurCap = el("#blur-cap");
+  const $blurBtn = el("#btn-blur-refresh");
+
+  async function loadBlur(){
+    try{
+      const res = await fetch("./blurs/manifest.json", { cache: "no-store" });
+      if(!res.ok) throw new Error("manifest fetch failed");
+      const { images = [] } = await res.json();
+      if(!images.length) return;
+      const pick = images[Math.floor(Math.random()*images.length)];
+      // 画像パス
+      const src = `./blurs/${pick.file}`;
+      if($blurImg){ $blurImg.src = src; }
+      if($blurCap){ $blurCap.textContent = `${pick.author} / ${pick.date}`; }
+    }catch(e){
+      console.error(e);
+      if($blurCap){ $blurCap.textContent = "画像が読み込めませんでした。"; }
+    }
+  }
+  $blurBtn?.addEventListener("click", loadBlur);
+  // 初期ロード
+  if($blurImg) loadBlur();
+
 })();
