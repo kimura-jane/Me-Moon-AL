@@ -15,6 +15,12 @@ const SHEETS = [
 const ORDER = SHEETS.map(s=>s.label);
 const GVIZ = name => `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;
 const DEBUG = new URL(location.href).searchParams.get("debug")==="1";
+
+/* ---- みんなのブレ撮り ---- */
+const SNAP = {
+  manifest: "blurs/manifest.json", // ルート直下に /blurs/ 配置
+  count: 6                          // 一度に出す枚数
+};
 /* ========================= */
 
 const bySlug = new Map();
@@ -114,7 +120,6 @@ function catFromTitle(title){
   return "greet";
 }
 const TITLE_ORDER = ["チャージ","NFTコラボ","ギルドミッション","挨拶タップ"];
-
 function groupLabels(labels){
   const map=new Map(); // title -> {cat, chips:Set}
   for(const l of labels){
@@ -155,6 +160,43 @@ function go(){
   const u=new URL(location.href); u.searchParams.set("q", q); history.replaceState(null,"",u.toString());
 }
 
+/* ===== みんなのブレ撮り ===== */
+function shuffle(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+async function loadSnaps(){
+  const grid = $("#snaps-grid");
+  if(!grid) return;
+  try{
+    const res = await fetch(`${SNAP.manifest}?_=${Date.now()}`, {cache:"no-store"});
+    if(!res.ok) throw new Error("manifest fetch failed");
+    const data = await res.json();
+    const list = (data.images || data || []).map(x=>{
+      if(typeof x === "string") return { url:`blurs/${encodeURIComponent(x)}`, alt:"" };
+      if(x.url) return x;
+      if(x.file) return { url:`blurs/${encodeURIComponent(x.file)}`, alt:(x.alt||"") };
+      return null;
+    }).filter(Boolean);
+    renderSnaps(shuffle(list).slice(0, SNAP.count));
+    $("#shuffle")?.addEventListener("click", ()=>renderSnaps(shuffle(list).slice(0, SNAP.count)));
+  }catch(e){
+    console.error(e);
+    grid.innerHTML = `<div class="chip">manifest.json が見つからない。</div>`;
+  }
+}
+function renderSnaps(items){
+  const grid = $("#snaps-grid"); if(!grid) return;
+  grid.innerHTML = items.map(it=>{
+    const alt = it.alt ? `alt="${it.alt}"` : 'alt=""';
+    const cap = it.alt ? `<span class="snap-caption">${it.alt}</span>` : "";
+    return `<a class="snap-card" href="${it.url}" target="_blank" rel="noopener">
+      <img ${alt} src="${it.url}" loading="lazy" decoding="async">${cap}
+    </a>`;
+  }).join("");
+}
+
 /* ===== boot ===== */
 document.addEventListener("DOMContentLoaded", async ()=>{
   $("#go")?.addEventListener("click", go);
@@ -166,6 +208,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     inp.setAttribute("spellcheck","false");
   }
   await loadAll();
+  await loadSnaps();               // ← 追加
   const init=new URL(location.href).searchParams.get("q");
   if(init && inp){ inp.value=init; go(); }
 });
