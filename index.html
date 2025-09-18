@@ -1,135 +1,108 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Me-Moon AL Checker</title>
-  <style>
-    :root{
-      --bg:#071a2b;--panel:#0e253a;--card:#122a41;--ink:#e8f1ff;
-      --muted:#9fb3c9;--radius:18px;--radius-sm:14px;--chip:#1a3550;
-      --gradA:#8be2ff;--gradB:#b79bff;--ring:rgba(255,255,255,.08);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;background:radial-gradient(1200px 800px at 10% -10%,#133b54 0,#0b2033 45%,#071a2b 70%) fixed var(--bg);
-      color:var(--ink);font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      -webkit-font-smoothing:antialiased;line-height:1.45;
-    }
-    .wrap{max-width:900px;margin:24px auto 80px;padding:0 16px}
-    .hero{display:flex;gap:16px;align-items:center;margin-bottom:16px}
-    .logo{width:56px;height:56px;border-radius:16px;background:
-      radial-gradient(circle at 30% 30%,#ffd24d 0 56%,transparent 57%),
-      radial-gradient(circle at 67% 44%,#0a1a2b 0 66%,transparent 67%),
-      radial-gradient(circle at 74% 58%,#f96ea7 0 22%,transparent 23%),
-      #0c2134;
-      box-shadow:0 6px 24px rgba(0,0,0,.35);
-    }
-    h1{margin:0;font-size:28px;letter-spacing:.4px}
-    .sub{margin:2px 0 0;color:var(--muted);font-size:14px}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Me-Moon AL Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c1b2a; --card:#0f2336; --card2:#0b1a2a; --chip:#1b2f45;
+    --fg:#e9f0f7; --muted:#9fb3c7; --accent1:#7ad7ff; --accent2:#c7a0ff;
+    --ring:rgba(122,215,255,.3);
+    --orange:#ffa01c; --green:#2dd38d; --purple:#b689ff; --pink:#ff80b3;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:"Zen Kaku Gothic New",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:var(--fg);
+    background: radial-gradient(1200px 800px at 10% -10%, #123a50 0%, transparent 60%),
+                radial-gradient(1000px 700px at 110% 0%, #2a3d70 0%, transparent 60%),
+                var(--bg);
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:20px 16px 64px}
+  header{display:flex; gap:16px; align-items:center; margin:8px 0 10px}
+  header .logo{width:48px;height:48px;border-radius:14px;background:#ffda67;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  h1{font-size:34px;line-height:1.1;margin:0}
+  .sub{color:var(--muted); margin:6px 0 0}
 
-    .panel{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)) var(--panel);
-      border-radius:var(--radius);padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.35) inset,0 12px 40px var(--ring)}
-    .stack{display:flex;flex-direction:column;gap:14px}
-    .input{
-      width:100%;padding:16px 18px;border-radius:14px;background:#0b2134;color:var(--ink);
-      border:1px solid rgba(255,255,255,.08);font-size:18px;outline:none
-    }
-    .btn{
-      appearance:none;border:0;border-radius:14px;padding:16px 18px;color:#08121d;
-      font-weight:800;letter-spacing:.08em;font-size:15px;
-      background:linear-gradient(90deg,var(--gradA),var(--gradB));
-      cursor:pointer;box-shadow:0 6px 20px rgba(79,160,255,.25), inset 0 0 0 1px rgba(255,255,255,.25);
-      transition:transform .04s ease-out
-    }
-    .btn:active{transform:translateY(1px)}
-    .section{margin-top:22px}
-    .section h2{margin:0 0 10px;font-size:18px;letter-spacing:.12em;color:#cfe5ff}
+  .panel{background:linear-gradient(180deg,var(--card) 0%,var(--card2) 100%);
+         border-radius:22px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.05)}
+  .stack{display:flex; flex-direction:column; gap:14px}
+  .input{width:100%; padding:16px 18px; border-radius:16px; background:#0a1a28; color:var(--fg);
+         border:1px solid rgba(255,255,255,.06); font-size:18px}
+  .btn{width:100%; padding:16px; border:0; border-radius:16px; font-weight:700; font-size:18px; color:#07131e;
+       background:linear-gradient(90deg, var(--accent1), var(--accent2)); box-shadow:0 8px 24px var(--ring); cursor:pointer}
+  .btn:active{transform:translateY(1px)}
 
-    .result{border-radius:var(--radius);background:rgba(255,255,255,.02);padding:14px 12px}
-    .cards{display:flex;flex-direction:column;gap:14px}
-    .card{
-      background:var(--card);border-radius:16px;padding:16px 14px;position:relative;
-      box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 10px 30px rgba(0,0,0,.25)
-    }
-    .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-    .dot{width:12px;height:12px;border-radius:50%}
-    .title{font-size:20px;font-weight:800;letter-spacing:.12em;margin-right:auto}
+  h2{font-size:22px;margin:22px 8px 10px}
+  .result-card{background:#0c2134;border:1px solid rgba(255,255,255,.05);border-radius:18px;padding:14px 14px 8px;margin-top:10px}
+  .item{background:#0b1e31;border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:18px;
+        display:flex; align-items:center; justify-content:space-between; gap:14px; margin:12px 0}
+  .left{display:flex; align-items:center; gap:12px}
+  .dot{width:14px;height:14px;border-radius:50%}
+  .title{font-size:22px; font-weight:700}
+  .chips{display:flex; gap:12px}
+  .chip{background:var(--chip); color:#f6e9ef; padding:10px 16px; border-radius:999px; border:1px solid rgba(255,255,255,.08);
+        font-weight:700; letter-spacing:.02em; min-width:84px; text-align:center}
+  .chip.ok{background:rgba(45,211,141,.12); border-color:rgba(45,211,141,.35)}
+  .chip.ng{background:rgba(255,128,179,.10); border-color:rgba(255,128,179,.35)}
+  .muted{color:var(--muted)}
 
-    .chips{display:flex;gap:10px}
-    .chip{
-      background:var(--chip);color:#d6e7ff;border:1px solid rgba(255,255,255,.15);
-      border-radius:9999px;padding:10px 16px;font-weight:800;letter-spacing:.12em
-    }
-    .chip.ok{background:#173f2c;border-color:#3bd188;color:#bafad1}
-    .chip.ng{background:#3a1f2c;border-color:#f37a9b;color:#ffd7e2}
+  /* gallery */
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .muted2{color:#a9b7c6; font-size:14px; margin:4px 0 0; letter-spacing:.02em}
+  .gallery{margin-top:12px}
+  figure.blur-card{margin:12px 0 0; background:#061523; border:1px solid rgba(255,255,255,.06);
+    border-radius:20px; overflow:hidden; position:relative}
+  .blur-card img{width:100%; display:block}
+  figcaption{
+    position:absolute; left:12px; bottom:12px; padding:6px 10px; border-radius:12px;
+    backdrop-filter: blur(8px); background:rgba(0,0,0,.35); color:#fff; font-size:14px; border:1px solid rgba(255,255,255,.12);
+  }
+  /* “文字ブレ” トグル */
+  .blur-on{ filter: none; }
+  .blur-on.text-warp{ text-shadow: 0 0 2px rgba(255,255,255,.9), 2px 0 0 rgba(255,255,255,.5), -2px 0 0 rgba(255,255,255,.5); }
+  .caption-blur{ filter: blur(1.5px) contrast(1.2) saturate(1.1); }
 
-    .muted{color:var(--muted)}
-    .hidden{display:none}
-
-    /* みんなのブレ撮り */
-    .blur-wrap{margin-top:28px}
-    .blur-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-    .hint{font-size:12px;color:var(--muted)}
-    .shot{
-      background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)) var(--card);
-      border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35)
-    }
-    .shot img{width:100%;height:auto;display:block}
-    .cap{
-      position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.42);
-      color:#eef6ff;padding:6px 10px;border-radius:10px;font-size:13px;backdrop-filter:blur(2px)
-    }
-    .cap.motion-blur{
-      text-shadow:
-        0 0 0 currentColor,
-        2px 0 0 rgba(255,255,255,.15),
-        4px 0 0 rgba(255,255,255,.1),
-        6px 0 0 rgba(255,255,255,.06);
-      filter:blur(.2px)
-    }
-    .shot-box{position:relative}
-    footer{margin:26px 0 0;color:var(--muted);font-size:12px;text-align:center}
-  </style>
+  footer{margin:40px 0 0; text-align:center; color:var(--muted)}
+</style>
 </head>
 <body>
   <div class="wrap">
-    <div class="hero">
+    <header>
       <div class="logo" aria-hidden="true"></div>
       <div>
         <h1>Me-Moon AL Checker</h1>
         <div class="sub">slug を入力して検索</div>
       </div>
-    </div>
+    </header>
 
-    <div class="panel">
+    <section class="panel">
       <div class="stack">
-        <input id="slug" class="input" type="text" inputmode="latin" autocomplete="off" placeholder="slug を入力" />
-        <button id="searchBtn" type="button" class="btn">検索</button>
+        <input id="slug" class="input" placeholder="slug を入力" autocomplete="off">
+        <button id="searchBtn" class="btn">検索</button>
       </div>
 
-      <div class="section">
-        <h2>照会結果</h2>
-        <div id="resultBox" class="result">
-          <div id="resultMsg" class="muted">未検索です。</div>
-          <div id="cards" class="cards hidden"></div>
-        </div>
-      </div>
+      <h2>照会結果</h2>
+      <div id="resultBox" class="result-card muted">未検索です。</div>
+    </section>
 
-      <div class="section blur-wrap">
-        <div class="blur-head">
-          <h2>みんなのブレ撮り</h2>
-          <button id="blurRefreshBtn" type="button" class="btn" style="padding:10px 14px;font-size:14px">更新</button>
-        </div>
-        <div id="blurBox" class="shot hidden"></div>
-        <div class="hint">毎回ランダムに1枚表示。キャプションをタップで“文字ブレ”。</div>
-      </div>
-    </div>
+    <h2>AL の種類</h2>
+    <section id="catalog" class="panel"></section>
+
+    <h2 class="section-head">
+      <span>みんなのブレ撮り</span>
+      <button id="galleryRefresh" class="btn" style="width:auto; min-width:120px; padding:10px 16px; font-size:16px;">更新</button>
+    </h2>
+    <div class="muted2">毎回ランダムに1枚表示。キャプションをタップで “文字ブレ”。</div>
+    <section class="gallery" id="gallery"></section>
 
     <footer>© Me-Moon</footer>
   </div>
 
-  <script src="app.js?v=26" defer></script>
+  <script src="./app.js" defer></script>
 </body>
 </html>
