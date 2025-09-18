@@ -1,107 +1,140 @@
-/* app.js – v31: auto-run search on load */
+/* app.js — AL照会のみ。ブレ撮りの挙動は触らない */
 (() => {
   "use strict";
 
-  // ===== DOM helpers =====
-  const $  = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  // ====== Config ======
+  const FILE_ID = "1-2oS--u1jf0fm-m9N_UDF5-aN-oLg_-wyqEpMSdcvcU"; // ←あなたのスプシID
+  // それぞれのシート名は実在する名前に合わせる
+  const GROUPS = [
+    { key: "charge", title: "チャージ", sheets: [{ n: 1, name: "チャージAL①" }, { n: 2, name: "チャージAL②" }] },
+    { key: "nft",    title: "NFTコラボ", sheets: [{ n: 1, name: "NFTコラボAL①" }, { n: 2, name: "NFTコラボAL②" }] },
+    { key: "guild",  title: "ギルドミッション", sheets: [{ n: 1, name: "ギルドミッションAL①" }, { n: 2, name: "ギルドミッションAL②" }] },
+    { key: "hello",  title: "挨拶タップ", sheets: [{ n: 1, name: "挨拶タップAL①" }, { n: 2, name: "挨拶タップAL②" }] },
+  ];
 
-  // できるだけ既存のID/属性に合わせて柔軟に取る
-  const el = {
-    input  : $('#slug, #slugInput, #q, [data-role="slug"]'),
-    search : $('#search, #btnSearch, #doSearch, [data-role="search"]'),
-    resultBox: $('#resultBox, #result, [data-role="result"]')
-  };
+  // ====== DOM ======
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  const form = $("#search-form");
+  const input = $("#slug-input");
+  const echo = $("#query-echo");
+  const err = $("#error-msg");
+  const list = $("#al-list");
 
-  // ====== 既存の検索関数があるなら使う ======
-  // 以前の実装名に合わせて探す（あるものを使う）
-  const existingSearch =
-    window.runSearch || window.doSearch || window.handleSearch || null;
+  // 初期状態（未検索スタイル）
+  function resetUI() {
+    echo.textContent = "未検索です。";
+    err.hidden = true;
+    $$(".pill", list).forEach(p => {
+      p.classList.remove("is-on","is-off");
+      // 初期の薄い表示
+      p.style.opacity = ".45";
+    });
+  }
+  resetUI();
 
-  // ====== 正規化（既存の関数が無い時だけ使うダミー） ======
-  // 既に照会ロジックがある前提。ここは触らない。
-  async function fallbackSearch(slug) {
-    // もし既存の runSearch などが無い場合でも落ちないようにするだけ。
-    // 実際の照会は既存関数に任せたいので、ここは何もしない。
-    console.warn('既存の検索関数が見つからないため、fallbackSearchが呼ばれました。');
-    return;
+  // ====== Utils ======
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // slug 標準化：大文字小文字/全角/空白/区切り記号の揺れを吸収
+  function normalize(s) {
+    if (!s) return "";
+    const base = s.toString().normalize("NFKC").trim().toLowerCase();
+    // 比較候補を数種類返す
+    const a = base.replace(/\s+/g, "");
+    const b = a.replace(/_/g, "-");
+    const c = a.replace(/-/g, "_");
+    return [a,b,c]; // 例: "me-moon", "me_moon"
   }
 
-  // ====== 自動照会まわり ======
-  const LS_KEY = 'mm_last_slug';
-  let autoRan = false;
+  // Google Sheets CSV を Set で取得
+  async function fetchSet(sheetName) {
+    const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&t=${Date.now()}`;
+    const res = await fetch(url, { cache:"no-store" });
+    if (!res.ok) throw new Error(`${sheetName} ${res.status}`);
+    const text = await res.text();
 
-  // URL / LocalStorage から値を復元
-  function restoreSlug() {
-    if (!el.input) return '';
-    const params = new URLSearchParams(location.search);
-    const fromUrl = (params.get('slug') || '').trim();
+    const set = new Set();
+    text.split(/\r?\n/).forEach((line, i) => {
+      // 1列目に slug（ヘッダ行も含む想定）
+      const cell = (line.split(",")[0] || "").replace(/^["']|["']$/g,"");
+      if (i === 0) return; // ヘッダ飛ばし
+      const cand = normalize(cell);
+      cand.forEach(v => v && set.add(v));
+    });
+    return set;
+  }
 
-    // 入力欄が空なら URL > LocalStorage の順で復元
-    if (!el.input.value || !el.input.value.trim()) {
-      if (fromUrl) {
-        el.input.value = fromUrl;
-      } else {
-        const last = (localStorage.getItem(LS_KEY) || '').trim();
-        if (last) el.input.value = last;
-      }
+  // 1グループ（AL①/②）の両シートを読む
+  async function readGroup(group) {
+    const result = { key: group.key, has1:false, has2:false };
+    try {
+      // レート制限避けに少し間隔
+      const [s1, s2] = await Promise.all([
+        fetchSet(group.sheets[0].name),
+        (async () => { await sleep(120); return fetchSet(group.sheets[1].name); })(),
+      ]);
+      result.s1 = s1; result.s2 = s2;
+    } catch (e) {
+      throw e;
     }
-    return el.input.value.trim();
+    return result;
   }
 
-  // 「ブラウザの自動補完が遅れて入る」Safari 対策：pageshow/DOMContentLoaded 後に少し待って実行
-  function scheduleAutoRun() {
-    if (autoRan) return;
-    // 2段階でリトライ（autofill遅延に強くする）
-    setTimeout(tryAutoRun, 180);
-    setTimeout(tryAutoRun, 500);
+  // UI 反映
+  function applyUI(groupKey, ok1, ok2) {
+    const card = $(`.card[data-key="${groupKey}"]`, list);
+    if (!card) return;
+    const pill1 = $(`.pill[data-kind="1"]`, card);
+    const pill2 = $(`.pill[data-kind="2"]`, card);
+    // 一旦リセット
+    [pill1,pill2].forEach(p => p.classList.remove("is-on","is-off"));
+    // ON/OFF 付与
+    pill1.classList.add(ok1 ? "is-on" : "is-off");
+    pill2.classList.add(ok2 ? "is-on" : "is-off");
+    // 初期薄さ解除
+    [pill1,pill2].forEach(p => p.style.opacity = "");
   }
 
-  function tryAutoRun() {
-    if (autoRan || !el.input) return;
-    const v = restoreSlug();
-    if (!v) return;
+  // ====== Search flow ======
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
 
-    autoRan = true;
-    // 連打やレート制限対策で少し間を空ける
-    setTimeout(() => {
-      if (existingSearch) {
-        existingSearch(v);
-      } else if (el.search) {
-        // 既存のクリックハンドラに流す
-        el.search.click();
-      } else {
-        // それも無い時の最終手段
-        fallbackSearch(v);
+    const q = input.value;
+    const variants = normalize(q);
+    if (!variants[0]) {
+      resetUI();
+      return;
+    }
+
+    // 表示まわり初期化
+    echo.textContent = `照会: ${q}`;
+    err.hidden = true;
+    // いったん薄表示解除
+    $$(".pill", list).forEach(p => p.style.opacity = "");
+
+    try {
+      // すべてのグループのシートを取得
+      const data = [];
+      for (const g of GROUPS) {
+        // 連打でスロットリングを避けるため順次取得
+        const r = await readGroup(g);
+        data.push(r);
+        await sleep(120);
       }
-    }, 120);
-  }
 
-  // ====== 手動検索の保存フック ======
-  function hookSearchButton() {
-    if (!el.search || !el.input) return;
-    // 既存の click を壊さないため、先にフックだけ
-    el.search.addEventListener('click', () => {
-      const v = (el.input.value || '').trim();
-      if (v) {
-        try { localStorage.setItem(LS_KEY, v); } catch {}
-      }
-    }, { capture: true });
-  }
+      // 照合 & 反映
+      data.forEach(d => {
+        const hit1 = variants.some(v => d.s1.has(v));
+        const hit2 = variants.some(v => d.s2.has(v));
+        applyUI(d.key, hit1, hit2);
+      });
 
-  // ====== 起動 ======
-  function init() {
-    hookSearchButton();
-    restoreSlug();
+    } catch (e) {
+      console.error(e);
+      err.hidden = false;
+      // エラー時はボタン/見た目はそのまま（前回の結果を消したくない場合）
+    }
+  });
 
-    // 直近の「照会エラー」表示で画面が汚れないよう、初期化時に一旦クリア（既存UIを壊さない範囲）
-    const err = $('.result-error, [data-role="result-error"]');
-    if (err) err.textContent = '';
-
-    scheduleAutoRun();
-  }
-
-  // ページ遷移復帰でも発火（iOS Safari対策）
-  window.addEventListener('pageshow', init, { once: false });
-  document.addEventListener('DOMContentLoaded', init, { once: true });
 })();
