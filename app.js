@@ -1,168 +1,211 @@
-/* ===== Me-Moon AL Checker (DEBUG build) =====
-   - シートID固定（あなたのID）
-   - 失敗時フェイルセーフ
-   - ブレ撮りは blurs/manifest.json → /manifest.json の順に探す
-   - DEBUG=true で詳細ログ
-*/
+/* app.js – v26 */
 (() => {
-  const DEBUG = false;
-  const log = (...a)=>{ if(DEBUG) console.log('[AL]', ...a); };
+  "use strict";
 
-  const SHEET_ID = '1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU';
+  // ====== Config ============================================================
+  const FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU";
 
-  const CATEGORIES = [
-    { name:'チャージ', color:'var(--ok)', sheets:['チャージAL①','チャージAL②'] },
-    { name:'NFTコラボ', color:'var(--nft)', sheets:['NFTコラボAL①','NFTコラボAL②'] },
-    { name:'ギルドミッション', color:'var(--guild)', sheets:['ギルドミッションAL①','ギルドミッションAL②'] },
-    { name:'挨拶タップ', color:'var(--hello)', sheets:['挨拶タップAL①','挨拶タップAL②'] },
+  // 表示順・色
+  const SHEETS = [
+    { label: "チャージ",       a1: "チャージAL①", a2: "チャージAL②", color: "#ffa31a" },
+    { label: "NFTコラボ",      a1: "NFTコラボAL①", a2: "NFTコラボAL②", color: "#46e2a4" },
+    { label: "ギルドミッション", a1: "ギルドミッションAL①", a2: "ギルドミッションAL②", color: "#c79cff" },
+    { label: "挨拶タップ",     a1: "挨拶タップAL①", a2: "挨拶タップAL②", color: "#ff83b7" }
   ];
 
-  const $ = s => document.querySelector(s);
-  const slugInput = $('#slugInput');
-  const searchBtn = $('#searchBtn');
-  const resultBody = $('#resultBody');
-  const qSpan = $('#q');
-  const alList = $('#alList');
-  const bureImg = $('#bureImg');
-  const bureCap = $('#bureCaption');
-  const refreshBlurBtn = $('#refreshBlurBtn');
+  // ====== DOM ===============================================================
+  const $ = (q) => document.querySelector(q);
+  const slugInput = $("#slug");
+  const searchBtn = $("#searchBtn");
+  const resultMsg = $("#resultMsg");
+  const cardsWrap = $("#cards");
+  const blurBox = $("#blurBox");
+  const blurRefreshBtn = $("#blurRefreshBtn");
 
-  function renderAlList(){
-    alList.innerHTML = '';
-    for(const cat of CATEGORIES){
-      const el = document.createElement('div');
-      el.className = 'alCard';
-      el.innerHTML = `
-        <div class="alHead">
-          <span class="dot" style="background:${cat.color}"></span>
-          <div class="alName">${cat.name}</div>
-        </div>
-        <div class="alChips">
-          <div class="oval">AL①</div>
-          <div class="oval">AL②</div>
-        </div>`;
-      alList.appendChild(el);
-    }
-  }
-  renderAlList();
+  // ====== Utils =============================================================
+  const normalizeSlug = (s) =>
+    (s || "")
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase()
+      .replace(/^\s*@/, "")     // 先頭 @ を除去
+      .replace(/\s+/g, "_");    // 空白→アンダースコア
 
-  // -------- Google Sheets (GViz) ----------
-  const cache = new Map(); // sheetName -> Set
-  async function fetchSheet(sheetName){
-    if(cache.has(sheetName)) return cache.get(sheetName);
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=0&sheet=${encodeURIComponent(sheetName)}&range=A:A`;
-    log('fetchSheet:', sheetName, url);
-    try{
-      const res = await fetch(url, {cache:'no-store'});
-      const txt = await res.text();
-      // GViz は前置き付き JS なので JSON 部分だけ抜く
-      const json = JSON.parse(txt.replace(/^[^{]+/,'').replace(/;?\s*$/,''));
-      const rows = (json.table?.rows)||[];
-      const set = new Set();
-      for(const r of rows){
-        const v = (r?.c?.[0]?.v ?? '').toString().trim();
-        if(v) set.add(v);
-      }
-      cache.set(sheetName, set);
-      log('sheet ok:', sheetName, set.size);
-      return set;
-    }catch(e){
-      console.warn('sheet fail:', sheetName, e);
-      const empty = new Set();
-      cache.set(sheetName, empty);
-      return empty;
-    }
-  }
-  // 体感向上のためプリフェッチ
-  Promise.all(CATEGORIES.flatMap(c => c.sheets.map(fetchSheet))).catch(()=>{});
+  const csvUrl = (sheetName) =>
+    `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
 
-  // -------- 検索 ----------
-  async function onSearch(){
-    const slug = (slugInput.value||'').trim();
-    qSpan.textContent = slug || '-';
-    if(!slug){
-      resultBody.innerHTML = `<div class="muted">slugを入力してください。</div>`;
+  const csvToList = (csvText) => {
+    // 1列運用前提。ヘッダー行は無視。空白は落とす。
+    return csvText
+      .split(/\r?\n/)
+      .slice(1)
+      .map((line) => line.split(",")[0]?.replace(/^"|"$/g, ""))
+      .filter(Boolean)
+      .map((s) => normalizeSlug(s));
+  };
+
+  const fetchList = async (sheetName) => {
+    const res = await fetch(csvUrl(sheetName), { cache: "no-store" });
+    if (!res.ok) throw new Error(`fetch fail: ${sheetName}`);
+    const text = await res.text();
+    return csvToList(text);
+  };
+
+  // ====== Render ============================================================
+  const clearResult = () => {
+    cardsWrap.innerHTML = "";
+    cardsWrap.classList.add("hidden");
+  };
+
+  const renderCards = (rows, targetSlug) => {
+    clearResult();
+    if (!rows.length) {
+      resultMsg.textContent = "該当なし。slugを確認。";
       return;
     }
-    const hits = [];
-    for(const cat of CATEGORIES){
-      const [s1, s2] = await Promise.all(cat.sheets.map(fetchSheet));
-      const in1 = s1.has(slug);
-      const in2 = s2.has(slug);
-      if(in1 || in2) hits.push({cat,in1,in2});
+    resultMsg.textContent = `照会: ${targetSlug}`;
+    cardsWrap.classList.remove("hidden");
+
+    const frag = document.createDocumentFragment();
+
+    for (const row of rows) {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const top = document.createElement("div");
+      top.className = "row";
+
+      const dot = document.createElement("div");
+      dot.className = "dot";
+      dot.style.background = row.color;
+
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = row.label;
+
+      const chips = document.createElement("div");
+      chips.className = "chips";
+
+      const chip1 = document.createElement("div");
+      chip1.className = "chip " + (row.ok1 ? "ok" : "ng");
+      chip1.textContent = "AL①";
+
+      const chip2 = document.createElement("div");
+      chip2.className = "chip " + (row.ok2 ? "ok" : "ng");
+      chip2.textContent = "AL②";
+
+      chips.append(chip1, chip2);
+      top.append(dot, title, chips);
+      card.append(top);
+      frag.append(card);
     }
-    if(hits.length===0){
-      resultBody.innerHTML = `<div class="muted">該当なし。slugを確認。</div>`;
+    cardsWrap.append(frag);
+  };
+
+  // ====== Search ============================================================
+  const doSearch = async () => {
+    const want = normalizeSlug(slugInput.value);
+    if (!want) {
+      resultMsg.textContent = "slugを入力してください。";
+      clearResult();
       return;
     }
-    const wrap = document.createElement('div');
-    wrap.className = 'chips';
-    for(const h of hits){
-      const chip = document.createElement('div');
-      chip.className = 'chip';
-      chip.innerHTML = `
-        <span class="dot" style="background:${h.cat.color}"></span>
-        <span>${h.cat.name}</span>
-        ${h.in1? `<span class="oval" style="margin-left:6px">AL①</span>`:''}
-        ${h.in2? `<span class="oval">AL②</span>`:''}`;
-      wrap.appendChild(chip);
-    }
-    resultBody.innerHTML = '';
-    resultBody.appendChild(wrap);
-  }
+    resultMsg.textContent = "検索中…";
+    clearResult();
 
-  // -------- ブレ撮り（ランダム1枚） ----------
-  const MANIFEST_PATHS = ['blurs/manifest.json','manifest.json']; // 両方探す
-  async function loadManifest(){
-    for(const p of MANIFEST_PATHS){
-      try{
-        const res = await fetch(`${p}?ts=${Date.now()}`, {cache:'no-store'});
-        if(res.ok){
-          const m = await res.json();
-          if(Array.isArray(m.images) && m.images.length){
-            log('manifest ok:', p, m.images.length);
-            return m;
-          }
-        }
-      }catch(e){
-        log('manifest fail:', p, e);
+    try {
+      // 8枚並列取得
+      const [s1a, s1b, s2a, s2b, s3a, s3b, s4a, s4b] = await Promise.all([
+        fetchList(SHEETS[0].a1), fetchList(SHEETS[0].a2),
+        fetchList(SHEETS[1].a1), fetchList(SHEETS[1].a2),
+        fetchList(SHEETS[2].a1), fetchList(SHEETS[2].a2),
+        fetchList(SHEETS[3].a1), fetchList(SHEETS[3].a2)
+      ]);
+
+      const rows = [
+        { label: SHEETS[0].label, color: SHEETS[0].color, ok1: s1a.includes(want), ok2: s1b.includes(want) },
+        { label: SHEETS[1].label, color: SHEETS[1].color, ok1: s2a.includes(want), ok2: s2b.includes(want) },
+        { label: SHEETS[2].label, color: SHEETS[2].color, ok1: s3a.includes(want), ok2: s3b.includes(want) },
+        { label: SHEETS[3].label, color: SHEETS[3].color, ok1: s4a.includes(want), ok2: s4b.includes(want) }
+      ];
+
+      // すべて false のときもカードは出す（どこも該当なしが分かるように）
+      renderCards(rows, want);
+    } catch (e) {
+      console.error(e);
+      resultMsg.textContent = "取得エラー。共有設定 or シート名を確認。";
+      clearResult();
+    }
+  };
+
+  // ====== Blur photo =======================================================
+  const blurManifestUrls = ["/blurs/manifest.json", "/manifest.json"];
+
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  const loadBlurOnce = async () => {
+    blurBox.classList.add("hidden");
+    blurBox.innerHTML = "";
+
+    let manifest = null;
+    let lastError = null;
+
+    for (const url of blurManifestUrls) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`fetch fail ${url}`);
+        manifest = await res.json();
+        break;
+      } catch (err) {
+        lastError = err;
       }
     }
-    throw new Error('manifest not found');
-  }
-  async function pickRandomBlur(){
-    try{
-      const man = await loadManifest();
-      const arr = man.images;
-      const i = Math.floor(Math.random()*arr.length);
-      const it = arr[i];
-      const file = it.file || '';
-      const a = it.author || (file.split('_')[2]||'');
-      const d = it.date || '';
-      const base = file.startsWith('blurs/') ? '' : 'blurs/';
-      bureImg.src = `${base}${file}`;
-      bureImg.alt = `${a} / ${d}`;
-      bureCap.textContent = `${a} / ${d}`;
-    }catch(e){
-      console.warn(e);
-      bureImg.removeAttribute('src');
-      bureImg.alt = '';
-      bureCap.textContent = 'manifest.json が見つからない。';
+    if (!manifest) {
+      console.error(lastError);
+      return;
     }
-  }
-  function glitchOnce(el){
-    el.classList.remove('glitch'); void el.offsetWidth; el.classList.add('glitch');
-  }
 
-  // -------- イベント --------
-  searchBtn.addEventListener('click', onSearch);
-  slugInput.addEventListener('keydown', e=>{ if(e.key==='Enter') onSearch(); });
-  refreshBlurBtn.addEventListener('click', pickRandomBlur);
-  bureCap.addEventListener('click', ()=>glitchOnce(bureCap));
+    const list = (manifest.images || []).filter(Boolean);
+    if (!list.length) return;
 
-  // 初期表示
-  pickRandomBlur();
+    const item = pick(list); // 1枚だけ
+    const img = new Image();
+    img.src = (item.file?.startsWith("/") ? item.file : `/blurs/${item.file}`);
+    img.alt = "";
+    img.decoding = "async";
+    img.loading = "eager";
 
-  // 手動テスト用
-  window.__ALDEBUG__ = { onSearch, pickRandomBlur, fetchSheet };
+    const box = document.createElement("div");
+    box.className = "shot-box";
+    box.append(img);
+
+    const cap = document.createElement("div");
+    cap.className = "cap";
+    cap.textContent = `${item.author} / ${item.date}`;
+    cap.addEventListener("click", () => cap.classList.toggle("motion-blur"));
+    box.append(cap);
+
+    blurBox.append(box);
+    blurBox.classList.remove("hidden");
+  };
+
+  // ====== Events ===========================================================
+  const attachClick = (el, fn) => {
+    el.addEventListener("click", fn, { passive: true });
+    el.addEventListener("touchend", fn, { passive: true });
+  };
+
+  attachClick(searchBtn, doSearch);
+  attachClick(blurRefreshBtn, loadBlurOnce);
+
+  // iOSのフォームでEnter送信
+  slugInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      doSearch();
+    }
+  });
+
+  // 初期化：ページ読み込み時に1枚だけブレ撮り表示
+  window.addEventListener("DOMContentLoaded", loadBlurOnce);
 })();
