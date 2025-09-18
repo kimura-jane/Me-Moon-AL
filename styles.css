@@ -56,3 +56,24 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-syst
 .blur-cap{position:relative;display:inline-block;margin:10px;border-radius:12px;background:rgba(0,0,0,.45);padding:6px 10px}
 
 .footer{margin-top:28px;color:var(--muted);text-align:center}
+/* === ブレ撮り専用サイズ調整（他は触らない） === */
+#refreshBlur{
+  height: 52px;          /* 既定44px → 少し大きめ */
+  padding: 0 26px;       /* 横ゆったり */
+  font-size: 18px;       /* 文字を大きく */
+  border-radius: 16px;   /* 角丸を少し強めに */
+  font-weight: 700;      /* 視認性UP */
+  letter-spacing: .02em; /* つぶれ防止 */
+}
+
+/* キャプション（写真の左下の黒いラベル）を少し大きく */
+#blurCap{
+  font-size: 15px;       /* 読みやすく */
+  padding: 8px 12px;     /* 余白も少し増やす */
+  border-radius: 14px;
+}
+
+/* 端末が広めのときは、もう少しだけ大きく */
+@media (min-width: 480px){
+  #refreshBlur{ height: 56px; font-size: 19px; }
+}
