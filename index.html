@@ -1,220 +1,410 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Me-Moon AL Checker</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Me–Moon AL Checker</title>
+
 <style>
 :root{
-  --bg:#0d1b2a; --panel:#0a1523; --text:#eaf2ff; --muted:#7a8da3;
-  --accent1:#8be1ff; --accent2:#b59cff; --chipOff:#22384d;
-  --chipOnBorder:#1fb981;
+  --bg:#0d1b2a;
+  --panel:#0a1523;
+  --text:#dfe7f1;
+  --muted:#8aa0b8;
+  --accent1:#8be1ff;
+  --accent2:#b59cff;
+  --chipBg:#142233;
+  --chipOn:#113d2a;
+  --chipOff:#1f2834;
+  --chipRing:#1fb981;
+  --danger:#ff8e8e;
+  --ok:#35e1a0;
 }
 *{box-sizing:border-box}
+html,body{height:100%}
 body{
-  margin:0; color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  margin:0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  color:var(--text);
   background:
-    radial-gradient(1200px 500px at 10% -10%,#103960,transparent),
-    radial-gradient(1400px 600px at 110% -20%,#2d1955,transparent),
+    radial-gradient(1200px 500px at 10% -10%, #0f2740 0%, rgba(15,39,64,0) 70%),
+    radial-gradient(1400px 600px at 110% -20%, #1b1a37 0%, rgba(27,26,55,0) 70%),
     var(--bg);
 }
+
 .container{max-width:900px;margin:24px auto;padding:0 16px}
-.panel{background:rgba(10,20,35,.6);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px 16px 22px}
-h1{margin:0 0 6px;font-size:28px} .sub{margin:0 0 16px;color:var(--muted);font-size:14px}
+.panel{
+  background: rgba(10,20,35,.6);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:20px;
+  padding:20px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 10px 30px rgba(0,0,0,.25);
+}
+h1{margin:0 0 6px;font-size:28px}
+.sub{color:var(--muted);margin:0 0 18px}
+
 .field{display:flex;gap:12px;align-items:center}
-.input{flex:1;height:44px;padding:0 14px;border-radius:12px;background:#0b1a28;color:var(--text);border:1px solid rgba(255,255,255,.08);font-size:16px}
-.btn{height:44px;padding:0 20px;border:0;border-radius:14px;color:#09131c;font-weight:700;font-size:16px;cursor:pointer;
-  background-image:linear-gradient(90deg,var(--accent1),var(--accent2));
-  box-shadow:0 6px 16px rgba(142,136,224,.25)}
-.section{margin-top:20px}
-.section h2{margin:0 0 10px;font-size:20px}
-.caption{color:var(--muted);font-size:14px}
-.result{display:none} .result.show{display:block}
+.input{
+  flex:1;height:44px;padding:0 14px;border-radius:14px;
+  color:var(--text); background:#0f2236;border:1px solid rgba(255,255,255,.1);
+  outline:none;
+}
+.btn{
+  height:44px; padding:0 20px; border-radius:14px; border:1px solid rgba(255,255,255,.12);
+  color:#0f1726; font-weight:700; letter-spacing:.08em;
+  background-image: linear-gradient(90deg,var(--accent1),var(--accent2));
+  box-shadow: 0 6px 16px rgba(142,136,222,.25), inset 0 0 0 1px rgba(255,255,255,.25);
+  cursor:pointer;
+}
+.btn:active{transform:translateY(1px)}
 
-/* cards */
-.card{background:rgba(10,20,35,.65);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin:12px 0}
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.title{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700}
+.section-title{font-size:22px;margin:22px 0 12px}
+.help{color:var(--muted);font-size:14px;margin:8px 0 0}
+
+.resultHead{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px}
+.small{color:var(--muted);font-size:14px}
+
+.grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:12px;
+}
+@media(min-width:640px){
+  .grid{grid-template-columns: 1fr}
+}
+
+.card{
+  background: rgba(5,10,20,.6);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:18px;
+  padding:16px;
+}
+.cardHead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .dot{width:10px;height:10px;border-radius:50%}
-.dot.o{background:#ffa31a}.dot.g{background:#39dc7a}.dot.p{background:#b681ff}.dot.r{background:#ff79b0}
-.chips{display:flex;gap:10px}
-.chip{min-width:84px;height:36px;padding:0 14px;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:6px;
-  font-weight:700;font-size:14px;background:var(--chipOff);color:#7e93a7;border:1px solid rgba(255,255,255,.08)}
-.chip.on{background:#0e2c22;border-color:var(--chipOnBorder);color:#d7ffef;box-shadow:inset 0 0 0 1000px rgba(31,185,129,.12)}
-.chip.on::after{content:"✓";font-weight:900}
+.dot.y{background:#f3b21f}
+.dot.g{background:#28d07a}
+.dot.p{background:#c689ff}
+.dot.r{background:#ff6aa6}
+.cardTitle{font-size:20px;font-weight:700}
 
-/* blur */
-.blur-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.blur-card{background:rgba(10,20,35,.65);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px}
-.img-wrap{position:relative;overflow:hidden;border-radius:14px}
-.blur-img{display:block;width:100%;border-radius:14px;background:#0b1a28}
-.badge{position:absolute;left:16px;bottom:16px;background:rgba(0,0,0,.55);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px}
-.footer{opacity:.6;text-align:center;padding:24px 0 10px;font-size:12px}
-.small{font-size:12px;color:var(--muted)}
+.pills{display:flex;gap:12px;flex-wrap:wrap}
+.pill{
+  position:relative;
+  min-width:110px; height:42px; padding:0 14px;
+  border-radius:999px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--chipOff);
+  border:1px solid rgba(255,255,255,.08);
+  color:var(--muted);
+  user-select:none;
+}
+.pill .label{font-weight:700;letter-spacing:.02em}
+.pill .mark{margin-left:6px;opacity:.9}
+.pill .count{margin-left:6px;opacity:.6;font-variant-numeric:tabular-nums}
+
+.pill.on{
+  color:#062414;
+  background: linear-gradient(90deg,#6ff0c1,#91c8ff);
+  border-color: rgba(255,255,255,.35);
+  box-shadow: 0 0 0 2px rgba(31,185,129,.25), 0 10px 24px rgba(92,168,255,.25);
+  animation: pulse 2.2s ease-in-out infinite;
+}
+.pill.on .mark{opacity:1}
+.pill.off{
+  background:var(--chipBg);
+  color:#7b8da5;
+  border-color:rgba(255,255,255,.06);
+  box-shadow:none;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(145,200,255,.35), 0 10px 24px rgba(92,168,255,.25)}
+  70%{box-shadow:0 0 0 10px rgba(145,200,255,0), 0 10px 24px rgba(92,168,255,.25)}
+  100%{box-shadow:0 0 0 0 rgba(145,200,255,0), 0 10px 24px rgba(92,168,255,.25)}
+}
+
+.note{margin-top:10px;color:var(--muted);font-size:14px}
+.error{color:var(--danger)}
+.ok{color:var(--ok)}
+
+/* ブレ撮り */
+.blurCard{margin-top:14px}
+.blurWrap{
+  position:relative;border-radius:18px;overflow:hidden;
+  background:#090f18;border:1px solid rgba(255,255,255,.06);
+}
+.blurImg{display:block;width:100%;height:auto}
+.cap{
+  position:absolute;left:14px;bottom:14px;
+  background:rgba(0,0,0,.55);color:#fff;border-radius:12px;
+  padding:8px 12px;font-size:14px;backdrop-filter: blur(6px);
+  border:1px solid rgba(255,255,255,.15);
+}
 </style>
 </head>
 <body>
-<main class="container">
-  <div class="panel">
-    <h1>Me-Moon AL Checker</h1>
-    <p class="sub">slug を入力して検索</p>
-    <div class="field">
-      <input id="slugInput" class="input" placeholder="slug を入力" autocomplete="off">
-      <button id="searchBtn" class="btn">検索</button>
-    </div>
+  <div class="container">
+    <div class="panel">
+      <h1>Me–Moon AL Checker</h1>
+      <p class="sub">slug を入力して検索</p>
 
-    <!-- 検索結果 -->
-    <section id="result" class="section result">
-      <h2>照会結果</h2>
-      <p id="resultNote" class="caption"></p>
-      <div id="cards"></div>
-    </section>
-
-    <!-- ブレ撮り -->
-    <section class="section">
-      <div class="blur-head">
-        <h2>みんなのブレ撮り</h2>
-        <button id="refreshBlur" class="btn" style="height:36px;font-size:14px;padding:0 16px">更新</button>
+      <div class="field">
+        <input id="slugInput" class="input" placeholder="slug を入力" autocomplete="off">
+        <button id="searchBtn" class="btn">検索</button>
       </div>
-      <div class="blur-card">
-        <div class="img-wrap">
-          <img id="blurImg" class="blur-img" alt="ブレ撮り">
-          <span id="blurCap" class="badge"></span>
+
+      <!-- 照会結果 -->
+      <h2 class="section-title">照会結果</h2>
+      <div class="resultHead">
+        <div id="statusMsg" class="small">未検索です。</div>
+        <div class="small">照会: <span id="who">—</span></div>
+      </div>
+
+      <div id="alPanel" class="grid">
+        <!-- チャージ -->
+        <div class="card" data-key="charge">
+          <div class="cardHead">
+            <span class="dot y"></span><div class="cardTitle">チャージ</div>
+          </div>
+          <div class="pills">
+            <div class="pill off" data-type="al1"><span class="label">AL①</span><span class="mark">×</span><span class="count"></span></div>
+            <div class="pill off" data-type="al2"><span class="label">AL②</span><span class="mark">×</span><span class="count"></span></div>
+          </div>
+        </div>
+
+        <!-- NFTコラボ -->
+        <div class="card" data-key="nft">
+          <div class="cardHead">
+            <span class="dot g"></span><div class="cardTitle">NFTコラボ</div>
+          </div>
+          <div class="pills">
+            <div class="pill off" data-type="al1"><span class="label">AL①</span><span class="mark">×</span><span class="count"></span></div>
+            <div class="pill off" data-type="al2"><span class="label">AL②</span><span class="mark">×</span><span class="count"></span></div>
+          </div>
+        </div>
+
+        <!-- ギルドミッション -->
+        <div class="card" data-key="guild">
+          <div class="cardHead">
+            <span class="dot p"></span><div class="cardTitle">ギルドミッション</div>
+          </div>
+          <div class="pills">
+            <div class="pill off" data-type="al1"><span class="label">AL①</span><span class="mark">×</span><span class="count"></span></div>
+            <div class="pill off" data-type="al2"><span class="label">AL②</span><span class="mark">×</span><span class="count"></span></div>
+          </div>
+        </div>
+
+        <!-- 挨拶タップ -->
+        <div class="card" data-key="greet">
+          <div class="cardHead">
+            <span class="dot r"></span><div class="cardTitle">挨拶タップ</div>
+          </div>
+          <div class="pills">
+            <div class="pill off" data-type="al1"><span class="label">AL①</span><span class="mark">×</span><span class="count"></span></div>
+            <div class="pill off" data-type="al2"><span class="label">AL②</span><span class="mark">×</span><span class="count"></span></div>
+          </div>
         </div>
       </div>
-      <p class="small">毎回ランダムに1枚表示。</p>
-    </section>
+
+      <p class="note">対象は **完全一致（大小区別なし・-/_ は同一扱い）**。行が複数あれば件数をカウントします。</p>
+
+      <!-- みんなのブレ撮り（触らない） -->
+      <div class="resultHead" style="margin-top:26px">
+        <h2 class="section-title" style="margin:0">みんなのブレ撮り</h2>
+        <button id="refreshBlur" class="btn" style="height:38px">更新</button>
+      </div>
+
+      <div class="blurCard">
+        <div class="blurWrap">
+          <img id="blurImg" class="blurImg" alt="ブレ撮り">
+          <div id="blurCap" class="cap"></div>
+        </div>
+        <p class="help">毎回ランダムに1枚表示。</p>
+      </div>
+    </div>
+
+    <p class="small" style="text-align:center;margin-top:12px;color:#93a4bb">© Me–Moon</p>
   </div>
-  <div class="footer">© Me-Moon</div>
-</main>
 
 <script>
-(() => {
-  "use strict";
+/* =========================
+   AL 照会（Google Sheets）
+   ========================= */
+const FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU"; // ←そのまま
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const input = $('#slugInput');
+const btn = $('#searchBtn');
+const who = $('#who');
+const statusMsg = $('#statusMsg');
 
-  /* ===== Config ===== */
-  const FILE_ID = "1-2oS--u1jf0fm-m9N_UDF5-aN-oLg_-wyqEpMSdcvcU";
-  const GROUPS = [
-    { key:"charge", label:"チャージ",           dot:"o", a1:"チャージAL①",           a2:"チャージAL②" },
-    { key:"nft",    label:"NFTコラボ",         dot:"g", a1:"NFTコラボAL①",         a2:"NFTコラボAL②" },
-    { key:"guild",  label:"ギルドミッション",   dot:"p", a1:"ギルドミッションAL①",   a2:"ギルドミッションAL②" },
-    { key:"hello",  label:"挨拶タップ",         dot:"r", a1:"挨拶タップAL①",         a2:"挨拶タップAL②" },
-  ];
-
-  /* ===== DOM ===== */
-  const $ = (s)=>document.querySelector(s);
-  const input   = $("#slugInput");
-  const btn     = $("#searchBtn");
-  const result  = $("#result");
-  const note    = $("#resultNote");
-  const cardsEl = $("#cards");
-
-  /* ===== Data ===== */
-  const alSets = new Map(); // sheetName -> Set(slug)
-
-  const norm = (s="") =>
-    s.normalize("NFKC").trim().toLowerCase().replace(/^@/,"").replace(/\s+/g,"_");
-
-  async function fetchCSV(sheet){
-    const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
-    const res = await fetch(url,{cache:"no-store"});
-    if(!res.ok) throw new Error("fetch failed: "+sheet);
-    const text = await res.text();
-    const set = new Set();
-    text.split(/\r?\n/).forEach((line,i)=>{
-      if(!line) return;
-      const slug = line.split(",")[0];             // 1列目を採用
-      if(i===0 && /me-moon/i.test(slug)) return;   // ヘッダ避け
-      const n = norm(slug);
-      if(n) set.add(n);
-    });
-    return set;
+/* カテゴリとシート候補 */
+const CONFIG = {
+  charge: {
+    label:'チャージ',
+    al1: ['チャージAL①','チャージAL1','チャージ AL①'],
+    al2: ['チャージAL②','チャージAL2','チャージ AL②']
+  },
+  nft: {
+    label:'NFTコラボ',
+    al1: ['NFTコラボAL①','NFT AL①','NFTコラボ AL①'],
+    al2: ['NFTコラボAL②','NFT AL②','NFTコラボ AL②']
+  },
+  guild: {
+    label:'ギルドミッション',
+    al1: ['ギルドミッションAL①','ギルド AL①','ギルドミッション AL①'],
+    al2: ['ギルドミッションAL②','ギルド AL②','ギルドミッション AL②']
+  },
+  greet: {
+    label:'挨拶タップ',
+    al1: ['挨拶タップAL①','挨拶 AL①','挨拶タップ AL①'],
+    al2: ['挨拶タップAL②','挨拶 AL②','挨拶タップ AL②']
   }
+};
 
-  async function loadAll(){
-    const names = [];
-    GROUPS.forEach(g=>names.push(g.a1,g.a2));
-    await Promise.all(names.map(async n=>{
-      if(!alSets.has(n)) alSets.set(n, await fetchCSV(n));
-    }));
-  }
-
-  function chip(label,on){
-    const d = document.createElement("div");
-    d.className = "chip"+(on?" on":"");
-    d.textContent = label;
-    return d;
-  }
-
-  function makeCard(g, slug){
-    const own1 = alSets.get(g.a1)?.has(slug);
-    const own2 = alSets.get(g.a2)?.has(slug);
-    const card = document.createElement("div");
-    card.className = "card";
-    const row  = document.createElement("div"); row.className = "row";
-    const ttl  = document.createElement("div"); ttl.className = "title";
-    const dot  = document.createElement("span"); dot.className = "dot "+g.dot;
-    const name = document.createElement("span"); name.textContent = g.label;
-    ttl.append(dot,name);
-    const chips = document.createElement("div"); chips.className = "chips";
-    chips.append(chip("AL①",!!own1), chip("AL②",!!own2));
-    row.append(ttl,chips);
-    card.append(row);
-    return card;
-  }
-
-  async function doSearch(){
-    const raw = input.value;
-    const slug = norm(raw);
-    if(!slug){ result.classList.remove("show"); return; }
-    btn.disabled = true;
+function gvizUrl(sheet){
+  return `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}`;
+}
+function parseGViz(txt){
+  // /*O_o*/google.visualization.Query.setResponse({...});
+  const i = txt.indexOf('{'); const j = txt.lastIndexOf('}');
+  if(i<0||j<0) throw new Error('GViz parse error');
+  return JSON.parse(txt.substring(i, j+1));
+}
+async function trySheets(sheetCandidates){
+  for(const name of sheetCandidates){
     try{
-      await loadAll();
-      cardsEl.innerHTML = "";
-      GROUPS.forEach(g=>cardsEl.appendChild(makeCard(g, slug)));
-      note.textContent = slug;     // 「該当/非該当」はチップのON/OFFで明示
-      result.classList.add("show");
-    }catch(err){
-      console.error(err);
-      note.textContent = "取得エラー。時間をおいて再実行してください。";
-      result.classList.add("show");
-    }finally{
-      btn.disabled = false;
+      const r = await fetch(gvizUrl(name), {mode:'cors', cache:'no-store'});
+      if(!r.ok) continue;
+      const t = await r.text();
+      const data = parseGViz(t);
+      const rows = (data.table.rows||[]).map(row=>{
+        // row.c はセル配列。文字化して1行テキスト化
+        return (row.c||[]).map(c => (c&&c.v!=null? String(c.v):'')).join('\t');
+      });
+      return rows; // 成功した最初のシートを返す
+    }catch(e){/* 次候補へ */}
+  }
+  return null; // どれも失敗
+}
+function normSlug(s){
+  const v = (s||'').trim().toLowerCase();
+  return v;
+}
+function slugVariants(s){
+  const v = normSlug(s);
+  return Array.from(new Set([v, v.replace(/-/g,'_'), v.replace(/_/g,'-')]));
+}
+function countHit(rows, slug){
+  if(!rows) return 0;
+  const vars = slugVariants(slug);
+  let cnt = 0;
+  for(const line of rows){
+    const L = String(line||'').trim().toLowerCase();
+    // 完全一致（セルつなぎのため、タブ区切りの単語に一致）
+    const parts = L.split(/\t/).map(x=>x.trim());
+    for(const v of vars){
+      if(parts.includes(v)) { cnt++; break; }
     }
   }
-  btn.addEventListener("click", doSearch);
-  input.addEventListener("keydown", e=>{ if(e.key==="Enter") doSearch(); });
-
-  /* ===== ブレ撮り ===== */
-  const img  = $("#blurImg");
-  const cap  = $("#blurCap");
-  const btnR = $("#refreshBlur");
-
-  function parseCaption(file){
-    const base = file.replace(/\.[^.]+$/,"");
-    const m = base.match(/^(\d{4}-\d{2}-\d{2})_(.+?)_/);
-    if(m) return {date:m[1], name:m[2]};
-    // フォールバック（末尾を名前扱い）
-    return {date:"", name:base};
+  return cnt;
+}
+function setPill(cardKey, type, count){
+  const card = document.querySelector(`.card[data-key="${cardKey}"]`);
+  const pill = card.querySelector(`.pill[data-type="${type}"]`);
+  pill.classList.remove('on','off'); // いったん外す
+  if(count>0){
+    pill.classList.add('on');
+    pill.querySelector('.mark').textContent='○';
+    pill.querySelector('.count').textContent = `(${count})`;
+  }else{
+    pill.classList.add('off');
+    pill.querySelector('.mark').textContent='×';
+    pill.querySelector('.count').textContent = '';
   }
+}
 
-  async function loadRandom(){
-    try{
-      const res = await fetch("./blurs/manifest.json",{cache:"no-store"});
-      if(!res.ok) return;
-      const man = await res.json();
-      const arr = man.images||[];
-      if(!arr.length) return;
-      const pick = arr[Math.floor(Math.random()*arr.length)];
-      img.src = "./blurs/"+pick.file;
-      const meta = parseCaption(pick.file);
-      cap.textContent = (pick.label||meta.name) + (meta.date?` / ${meta.date}`:"");
-    }catch(e){ console.error(e); }
+/* 検索本体 */
+async function runSearch(){
+  const slug = normSlug(input.value);
+  who.textContent = slug || '—';
+  // 初期化（全部×に戻す）
+  for(const key of Object.keys(CONFIG)){
+    setPill(key,'al1',0);
+    setPill(key,'al2',0);
   }
-  btnR.addEventListener("click", loadRandom);
-  loadRandom();
-})();
-<script defer src="./al.js"></script>
+  if(!slug){
+    statusMsg.textContent = 'slug を入力してください。';
+    statusMsg.className='small';
+    return;
+  }
+  statusMsg.textContent='照会中…';
+  statusMsg.className='small';
+
+  try{
+    const results = {};
+    // カテゴリ毎に AL①/AL② を並列取得
+    await Promise.all(Object.entries(CONFIG).map(async ([key,conf])=>{
+      const [rows1, rows2] = await Promise.all([
+        trySheets(conf.al1),
+        trySheets(conf.al2)
+      ]);
+      results[key] = {
+        al1: countHit(rows1, slug),
+        al2: countHit(rows2, slug)
+      };
+    }));
+
+    // 反映
+    for(const [k,v] of Object.entries(results)){
+      setPill(k, 'al1', v.al1);
+      setPill(k, 'al2', v.al2);
+    }
+    statusMsg.textContent='照会完了';
+    statusMsg.className='small ok';
+  }catch(e){
+    console.error(e);
+    statusMsg.textContent='取得エラー。時間をおいて再実行してください。';
+    statusMsg.className='small error';
+  }
+}
+
+btn.addEventListener('click', runSearch);
+input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') runSearch(); });
+
+/* =========================
+   みんなのブレ撮り（触らない）
+   ========================= */
+const blurImg = $('#blurImg');
+const blurCap = $('#blurCap');
+const btnRefresh = $('#refreshBlur');
+
+function parseCaptionFromName(filename){
+  // 例) "hidamari-neko_2025-09-01.jpg" -> {name:"hidamari-neko", date:"2025-09-01"}
+  const base = filename.replace(/\.[^.]+$/,'');
+  const m = base.match(/(.+)[\s_/-]+(\d{4}-\d{2}-\d{2})$/);
+  if(m) return {name:m[1], date:m[2]};
+  return {name:base, date:""};
+}
+
+async function loadRandomBlur(){
+  try{
+    const res = await fetch('./blurs/manifest.json', {cache:'no-store'});
+    if(!res.ok) return;
+    const man = await res.json();
+    const arr = man.images || [];
+    if(!arr.length) return;
+    const pick = arr[Math.floor(Math.random()*arr.length)];
+    // pick = { file, label? }
+    blurImg.src = './blurs/' + pick.file;
+    const meta = pick.label ? pick.label : parseCaptionFromName(pick.file);
+    const cap = (typeof meta === 'string') ? meta : `${meta.name} / ${meta.date || ''}`.trim();
+    blurCap.textContent = cap;
+  }catch(e){
+    console.error(e);
+  }
+}
+btnRefresh.addEventListener('click', loadRandomBlur);
+loadRandomBlur(); // 初回
+</script>
 </body>
 </html>
