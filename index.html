@@ -25,7 +25,7 @@ body{
 h1{font-size:26px;margin:0 0 2px;font-weight:800;letter-spacing:.2px}
 .lead{color:var(--muted)}
 .card{backdrop-filter:blur(14px);background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:20px;box-shadow:0 18px 42px #0006}
-.row{display:flex;gap:12px;margin-top:10px}
+.row{display:flex;gap:12px;margin-top:10px;margin-bottom:6px}
 .input{flex:1;display:flex;align-items:center;gap:10px;background:#ffffff12;border:1px solid var(--bd);border-radius:14px;padding:10px 12px}
 input[type="search"]{flex:1;background:transparent;border:0;color:var(--ink);font-size:16px;outline:none}
 button{padding:12px 16px;border:0;border-radius:14px;background:linear-gradient(135deg,#67e8f9,#a78bfa);
@@ -34,13 +34,13 @@ button:hover{filter:brightness(1.05)}button:active{transform:translateY(1px)}
 #status{margin-top:8px;color:#fca5a5;font-size:12px;display:none}
 @media (max-width:520px){.row{flex-direction:column}button{width:100%}}
 
-.result{margin-top:16px;padding:16px;border-radius:16px;background:#00000033;border:1px solid var(--bd)}
+.result{margin-top:18px;padding:16px;border-radius:16px;background:#00000033;border:1px solid var(--bd)}
 .result h3{margin:0 0 10px;font-size:16px}
 .groups{display:flex;flex-direction:column;gap:10px}
-.group{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,#ffffff0f,#00000010);border:1px solid var(--bd)}
+.group{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:14px;background:linear-gradient(180deg,#ffffff0f,#00000010);border:1px solid var(--bd)}
 .group-head{display:flex;align-items:center;gap:10px;min-width:140px}
 .group-title{font-weight:800}
-.chips{display:flex;gap:8px;flex-wrap:nowrap;overflow:auto;scrollbar-width:none}
+.chips{display:flex;gap:8px;flex-wrap:nowrap;overflow:auto;max-width:100%;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{padding:7px 11px;border-radius:999px;background:var(--chip);border:1px solid var(--chipbd);font-size:12.5px;line-height:1;white-space:nowrap}
 .i{width:18px;height:18px;border-radius:50%}
@@ -84,11 +84,9 @@ button:hover{filter:brightness(1.05)}button:active{transform:translateY(1px)}
         <label class="input" for="slugInput">
           <input id="slugInput" type="search" placeholder="例: me-moon" autocomplete="off" autocapitalize="none" spellcheck="false">
         </label>
-        <!-- どんなUIでも拾えるよう data-action 明示 -->
         <button id="searchBtn" type="button" data-action="search" aria-label="検索">検索</button>
-        <button id="refreshBtn" type="button" data-action="refresh" aria-label="更新">更新</button>
       </div>
-      <div id="status"></div>
+      <div id="status" aria-live="polite"></div>
       <section id="resultBox" class="result" hidden>
         <h3>照会: <code id="resultSlug"></code></h3>
         <div id="resultChips" class="groups"></div>
@@ -119,7 +117,6 @@ button:hover{filter:brightness(1.05)}button:active{transform:translateY(1px)}
     </section>
   </div>
 
-  <!-- defer 1本だけ。キャッシュ殺しは ?v=24 を適宜上げる -->
-  <script src="app.js?v=24" defer></script>
+  <script src="app.js?v=25" defer></script>
 </body>
 </html>
