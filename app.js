@@ -1,186 +1,207 @@
-/* app.js — v26 */
+/* app.js */
 (() => {
   "use strict";
 
-  // ========= Config =========
+  /** ====== 設定 ====== */
   const FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU";
 
-  // カテゴリごとのシート名
-  const CATEGORIES = [
-    { key: "charge", label: "チャージ", color: "#ffa01c", sheets: ["チャージAL①", "チャージAL②"] },
-    { key: "nft",    label: "NFTコラボ", color: "#2dd38d", sheets: ["NFTコラボAL①", "NFTコラボAL②"] },
-    { key: "guild",  label: "ギルドミッション", color: "#b689ff", sheets: ["ギルドミッションAL①", "ギルドミッションAL②"] },
-    { key: "greet",  label: "挨拶タップ", color: "#ff80b3", sheets: ["挨拶タップAL①", "挨拶タップAL②"] },
+  // 4カテゴリ × 2シート
+  const GROUPS = [
+    { key: "charge", label: "チャージ", color: getCSS("--accent1"),
+      sheets: { 1: "チャージAL①", 2: "チャージAL②" } },
+    { key: "nft", label: "NFTコラボ", color: getCSS("--accent2"),
+      sheets: { 1: "NFTコラボAL①", 2: "NFTコラボAL②" } },
+    { key: "guild", label: "ギルドミッション", color: getCSS("--accent3"),
+      sheets: { 1: "ギルドミッションAL①", 2: "ギルドミッションAL②" } },
+    { key: "hello", label: "挨拶タップ", color: getCSS("--accent4"),
+      sheets: { 1: "挨拶タップAL①", 2: "挨拶タップAL②" } },
   ];
 
-  // ========= State =========
-  // { "シート名": Set<slug> }
-  const DB = Object.create(null);
-  let READY = false;
+  /** ====== DOM ====== */
+  const $ = (s, r = document) => r.querySelector(s);
+  const resultBox  = $("#resultBox");
+  const resultList = $("#resultList");
+  const catalogBox = $("#catalog");
 
-  // ========= Utils =========
-  const $ = (sel) => document.querySelector(sel);
+  /** ====== 初期化 ====== */
+  document.addEventListener("DOMContentLoaded", () => {
+    renderCatalog();
+    $("#searchForm").addEventListener("submit", onSearch);
+    $("#blurRefresh").addEventListener("click", loadRandomBlur);
+    loadRandomBlur();
+  });
 
-  const normalize = (s) => (s || "")
-    .toString()
-    .normalize("NFKC")
-    .trim()
-    .toLowerCase()
-    .replace(/^@/, ""); // 先頭 @ を落とす
+  /** ====== 検索 ====== */
+  async function onSearch(e) {
+    e.preventDefault();
+    const raw = $("#slugInput").value || "";
+    const slug = normalize(raw);
+    if (!slug) {
+      resultBox.textContent = "該当なし。slugを確認。";
+      resultList.innerHTML = "";
+      resultBox.classList.remove("muted");
+      return;
+    }
+    resultBox.textContent = `照会: ${slug}`;
+    resultBox.classList.add("muted");
+    resultList.innerHTML = "";
 
-  // CSV -> Set（1列目の値だけ使う）
-  function csvToSet(csv) {
+    try {
+      // 8シートをキャッシュしながら取得
+      await warmUpSheets(Object.values(flattenSheets(GROUPS)));
+
+      const cards = [];
+      for (const g of GROUPS) {
+        const ok1 = hasSlug(g.sheets[1], slug);
+        const ok2 = hasSlug(g.sheets[2], slug);
+        if (!ok1 && !ok2) continue; // どちらにも無ければ非表示
+
+        cards.push(renderResultItem(g, ok1, ok2));
+      }
+
+      if (!cards.length) {
+        resultBox.textContent = `照会: ${slug}`;
+        resultBox.classList.remove("muted");
+        resultList.innerHTML = `<div class="result-box">該当なし。slugを確認。</div>`;
+      } else {
+        resultBox.textContent = `照会: ${slug}`;
+        resultBox.classList.remove("muted");
+        resultList.replaceChildren(...cards);
+      }
+    } catch (err) {
+      console.error(err);
+      resultBox.textContent = "読み込みでエラー。時間をおいて再試行してください。";
+      resultList.innerHTML = "";
+    }
+  }
+
+  /** ====== カタログ（固定） ====== */
+  function renderCatalog() {
+    const nodes = GROUPS.map(g => {
+      const root = document.createElement("div");
+      root.className = "cat";
+      root.innerHTML = `
+        <div class="cat-head">
+          <div class="cat-l">
+            <span class="dot" style="background:${g.color}"></span>
+            <span class="cat-title">${g.label}</span>
+          </div>
+          <div class="pills">
+            <span class="pill off">AL①</span>
+            <span class="pill off">AL②</span>
+          </div>
+        </div>`;
+      return root;
+    });
+    catalogBox.replaceChildren(...nodes);
+  }
+
+  /** ====== 結果アイテム ====== */
+  function renderResultItem(group, ok1, ok2) {
+    const root = document.createElement("div");
+    root.className = "cat";
+    root.innerHTML = `
+      <div class="cat-head">
+        <div class="cat-l">
+          <span class="dot" style="background:${group.color}"></span>
+          <span class="cat-title">${group.label}</span>
+        </div>
+        <div class="pills">
+          <span class="pill ${ok1 ? "on" : "off"}">AL①</span>
+          <span class="pill ${ok2 ? "on" : "off"}">AL②</span>
+        </div>
+      </div>`;
+    return root;
+  }
+
+  /** ====== スプレッドシート読込 ====== */
+  const sheetCache = new Map(); // sheetName -> Set<slug>
+
+  function sheetUrl(sheetName) {
+    // gviz CSV 出力
+    return `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  }
+
+  async function fetchSheetSet(sheetName) {
+    const res = await fetch(sheetUrl(sheetName), { cache: "no-store" });
+    if (!res.ok) throw new Error(`fetch failed: ${sheetName}`);
+    const csv = await res.text();
     const set = new Set();
-    if (!csv) return set;
-    // すごく単純な CSV（1列）前提。余計な空白や空行は無視。
-    csv.split(/\r?\n/).forEach(line => {
-      const v = normalize(line.split(",")[0]);
-      if (v) set.add(v);
+    // 1列目（slug想定）だけ採用
+    csv.split(/\r?\n/).forEach((line, i) => {
+      if (!line) return;
+      const cell = line.split(",")[0].replace(/^"|"$/g, "");
+      const v = normalize(cell);
+      if (!v) return;
+      // 先頭行が「slug」ならスキップ
+      if (i === 0 && v === "slug") return;
+      set.add(v);
     });
     return set;
   }
 
-  function fetchSheetSet(sheetName) {
-    const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-    return fetch(url, { cache: "no-store" })
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.text();
-      })
-      .then(csvToSet)
-      .catch(err => {
-        console.warn(`シート取得失敗: ${sheetName}`, err);
-        return new Set(); // 失敗時は空集合（= 全て該当なし）
-      });
-  }
-
-  // すべてのシートを読み込み
-  async function preloadAll() {
-    const tasks = [];
-    for (const cat of CATEGORIES) {
-      for (const sn of cat.sheets) {
-        tasks.push(
-          fetchSheetSet(sn).then(set => { DB[sn] = set; })
-        );
-      }
-    }
+  async function warmUpSheets(sheetNames) {
+    const tasks = sheetNames
+      .filter(n => !sheetCache.has(n))
+      .map(async n => sheetCache.set(n, await fetchSheetSet(n)));
     await Promise.all(tasks);
-    READY = true;
   }
 
-  // ========= Rendering =========
-  function chipHtml(ok, label) {
-    const cls = ok ? "chip ok" : "chip ng";
-    const txt = ok ? label : `${label}`;
-    // “対象/該当なし” など文字を足したいならここで
-    return `<span class="${cls}">${label}</span>`;
+  function hasSlug(sheetName, slug) {
+    const set = sheetCache.get(sheetName);
+    return !!(set && set.has(slug));
   }
 
-  function renderResult(slug) {
-    const box = $("#resultBox");
-    if (!slug) {
-      box.className = "result-card muted";
-      box.innerHTML = "未検索です。";
-      return;
-    }
-    if (!READY) {
-      box.className = "result-card muted";
-      box.textContent = "データを読み込み中…";
-      return;
-    }
-
-    const rows = CATEGORIES.map(cat => {
-      const [al1, al2] = cat.sheets;
-      const ok1 = DB[al1]?.has(slug) === true; // ← 見つからなければ false
-      const ok2 = DB[al2]?.has(slug) === true;
-      return `
-        <div class="item">
-          <div class="left">
-            <span class="dot" style="background:${cat.color}"></span>
-            <div class="title">${cat.label}</div>
-          </div>
-          <div class="chips">
-            ${chipHtml(ok1, "AL①")}
-            ${chipHtml(ok2, "AL②")}
-          </div>
-        </div>`;
-    }).join("");
-
-    box.className = "result-card";
-    box.innerHTML = `
-      <div class="muted" style="margin:2px 4px 8px">照会: <span>${slug}</span></div>
-      ${rows}
-    `;
+  function flattenSheets(groups) {
+    const out = {};
+    groups.forEach(g => { out[g.sheets[1]] = 1; out[g.sheets[2]] = 1; });
+    return out;
   }
 
-  function renderCatalog() {
-    const wrap = $("#catalog");
-    wrap.innerHTML = CATEGORIES.map(cat => `
-      <div class="item">
-        <div class="left">
-          <span class="dot" style="background:${cat.color}"></span>
-          <div class="title">${cat.label}</div>
-        </div>
-        <div class="chips">
-          <span class="chip">AL①</span>
-          <span class="chip">AL②</span>
-        </div>
-      </div>
-    `).join("");
-  }
-
-  // ========= Gallery (みんなのブレ撮り) =========
+  /** ====== ブレ撮り（ランダム1枚） ====== */
   async function loadRandomBlur() {
-    const host = "./blurs";
-    const manifestUrl = `${host}/manifest.json`;
-    const area = $("#gallery");
     try {
-      const res = await fetch(manifestUrl, { cache:"no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res = await fetch("blurs/manifest.json", { cache: "no-store" });
+      if (!res.ok) throw new Error("manifest fetch failed");
       const data = await res.json();
-      const list = Array.isArray(data.images) ? data.images : [];
-      if (!list.length) throw new Error("images が空");
-
-      const pick = list[Math.floor(Math.random() * list.length)];
-      const src = `${host}/${pick.file}`;
-      const author = pick.author || "unknown";
-      const date = pick.date || "";
-
-      area.innerHTML = `
-        <figure class="blur-card">
-          <img src="${src}" alt="" id="blurImg">
-          <figcaption id="blurCaption" title="タップで文字ブレ">${author} / ${date}</figcaption>
-        </figure>
+      const arr = Array.isArray(data?.images) ? data.images : [];
+      const card = $("#blurCard");
+      if (!arr.length) {
+        card.innerHTML = `<div class="result-box">画像がまだありません。</div>`;
+        return;
+      }
+      const pick = arr[Math.floor(Math.random() * arr.length)];
+      const src = `blurs/${pick.file}`;
+      card.innerHTML = `
+        <div class="imgwrap">
+          <img src="${src}" alt="">
+          <figcaption class="caption" id="blurCaption">${pick.author} / ${pick.date}</figcaption>
+        </div>
       `;
-
-      const cap = $("#blurCaption");
-      cap.addEventListener("click", () => {
-        cap.classList.toggle("caption-blur");
-      }, { once:false });
-
+      // 文字ブレ
+      $("#blurCaption").addEventListener("click", (ev) => {
+        ev.currentTarget.classList.remove("glitch");
+        // リスタート
+        void ev.currentTarget.offsetWidth;
+        ev.currentTarget.classList.add("glitch");
+      });
     } catch (e) {
-      console.warn(e);
-      area.innerHTML = `<div class="muted">manifest.json が見つからない。</div>`;
+      console.error(e);
+      $("#blurCard").innerHTML = `<div class="result-box">manifest.json が見つかりません。</div>`;
     }
   }
 
-  // ========= Wire up =========
-  function bind() {
-    const input = $("#slug");
-    const btn = $("#searchBtn");
-    const doSearch = () => renderResult(normalize(input.value));
-
-    btn.addEventListener("click", doSearch);
-    input.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doSearch(); });
-
-    $("#galleryRefresh").addEventListener("click", loadRandomBlur);
+  /** ====== ユーティリティ ====== */
+  function normalize(s) {
+    return String(s || "")
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/＿/g, "_"); // 全角アンダー対応
   }
 
-  // ========= Start =========
-  renderCatalog();
-  bind();
-  preloadAll().then(() => {
-    // 初回、「未検索」状態を維持。必要ならここで既定値を照会。
-  });
-  loadRandomBlur();
+  function getCSS(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
 })();
