@@ -6,5 +6,10 @@
     { "file": "2025-09-01_kimura_001.jpeg",        "author": "kimura",        "date": "2025-09-01" },
     { "file": "2025-09-01_u-masaki_001.jpeg",      "author": "u-masaki",      "date": "2025-09-01" },
     { "file": "2025-09-01_riko_001.jpeg",          "author": "riko",          "date": "2025-09-01" }
+    { "file": "2025-09-02_kimura_001.jpeg",   "label": "kimura / 2025-09-02" },
+    { "file": "2025-09-02_u-masaki_001.jpeg", "label": "u-masaki / 2025-09-02" },
+    { "file": "2025-09-02_riko_001.jpeg",     "label": "riko / 2025-09-02" },
+    { "file": "2025-09-03_hide-g_001.jpeg",   "label": "hide-g / 2025-09-03" },
+    { "file": "2025-09-03_riko_001.jpeg",     "label": "riko / 2025-09-03" }
   ]
 }
