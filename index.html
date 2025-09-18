@@ -1,113 +1,215 @@
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Me-Moon AL Checker</title>
-  <link rel="preconnect" href="https://docs.google.com">
-  <link rel="stylesheet" href="./styles.css" />
-</head>
-<body>
-  <main class="container">
-    <!-- ========== Header ========== -->
-    <header class="header">
-      <div class="brand">
-        <span class="brand__icon" aria-hidden="true"></span>
-        <h1 class="brand__title">Me-Moon AL Checker</h1>
-      </div>
-      <p class="brand__sub">slug を入力して検索</p>
-    </header>
+<!-- 既存の <script> の後ろ、</body> の直前に追加 -->
+<script>
+(() => {
+  "use strict";
 
-    <!-- ========== Search ========== -->
-    <section class="panel">
-      <form id="search-form" class="search" autocomplete="off">
-        <input id="slug-input" class="search__input" type="text" inputmode="latin"
-               placeholder="slug を入力" aria-label="slug を入力" />
-        <button id="search-btn" class="btn-grad" type="submit" aria-label="検索">検索</button>
-      </form>
-    </section>
+  /* ====== 設定（ここだけあなたの環境用） ====== */
+  // ★あなたのスプレッドシートID（提供いただいたIDをそのまま使用）
+  const FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU";
 
-    <!-- ========== Results (最初から表示) ========== -->
-    <section class="panel" id="results">
-      <div class="panel__head">
-        <h2 class="panel__title">照会結果</h2>
-        <p id="query-echo" class="echo">未検索です。</p>
-      </div>
+  // 各カテゴリが参照するタブ名（無い方は "" にすれば常に×）
+  const SHEETS = {
+    charge: { label: "チャージ",         al1: "チャージAL①",         al2: "チャージAL②",         dot:"#FDB022" },
+    nft:    { label: "NFTコラボ",        al1: "NFTコラボAL①",        al2: "NFTコラボAL②",        dot:"#12B76A" },
+    guild:  { label: "ギルドミッション",   al1: "ギルドミッションAL①", al2: "ギルドミッションAL②", dot:"#9B8AFB" },
+    greet:  { label: "挨拶タップ",        al1: "挨拶タップAL①",       al2: "挨拶タップAL②",       dot:"#F97066" },
+  };
+  /* ============================================ */
 
-      <!-- カード一覧（最初から出しておく） -->
-      <div id="al-list" class="cards" aria-live="polite">
-        <!-- JS が data-key を頼りに状態を点灯/消灯させます -->
-        <article class="card" data-key="charge">
-          <div class="card__head">
-            <span class="led led--y" aria-hidden="true"></span>
-            <h3 class="card__title">チャージ</h3>
-          </div>
-          <div class="card__actions">
-            <span class="pill" data-kind="1" aria-label="AL①">AL①</span>
-            <span class="pill" data-kind="2" aria-label="AL②">AL②</span>
-          </div>
-        </article>
+  // 既存UIから入力とボタンを拾う（idが無くても動くように広めに拾う）
+  const input =
+    document.querySelector("#slugInput") ||
+    document.querySelector('[name="slug"]') ||
+    document.querySelector('input[type="search"]') ||
+    document.querySelector('input[type="text"]');
 
-        <article class="card" data-key="nft">
-          <div class="card__head">
-            <span class="led led--g" aria-hidden="true"></span>
-            <h3 class="card__title">NFTコラボ</h3>
-          </div>
-          <div class="card__actions">
-            <span class="pill" data-kind="1" aria-label="AL①">AL①</span>
-            <span class="pill" data-kind="2" aria-label="AL②">AL②</span>
-          </div>
-        </article>
+  // 「検索」テキストのボタン/リンク全部にバインド
+  const searchButtons = Array.from(document.querySelectorAll("button,a,[role='button']"))
+    .filter(el => /検索/.test((el.textContent || "").trim()));
 
-        <article class="card" data-key="guild">
-          <div class="card__head">
-            <span class="led led--p" aria-hidden="true"></span>
-            <h3 class="card__title">ギルドミッション</h3>
-          </div>
-          <div class="card__actions">
-            <span class="pill" data-kind="1" aria-label="AL①">AL①</span>
-            <span class="pill" data-kind="2" aria-label="AL②">AL②</span>
-          </div>
-        </article>
+  // 「照会結果」の見出しの直後に結果ボードを作る（無ければbody先頭）
+  const resultRoot = document.querySelector("#al-results") || createResultRoot();
+  const errorBar   = ensureErrorBar(resultRoot);
 
-        <article class="card" data-key="hello">
-          <div class="card__head">
-            <span class="led led--r" aria-hidden="true"></span>
-            <h3 class="card__title">挨拶タップ</h3>
-          </div>
-          <div class="card__actions">
-            <span class="pill" data-kind="1" aria-label="AL①">AL①</span>
-            <span class="pill" data-kind="2" aria-label="AL②">AL②</span>
-          </div>
-        </article>
-      </div>
+  // 最初から空カードを描画（未検索でも表が見える）
+  renderEmptyCards();
 
-      <!-- エラー表示 -->
-      <p id="error-msg" class="error" hidden>取得エラー。時間をおいて再実行してください。</p>
-    </section>
+  // 操作バインド
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); runCheck(); }
+    });
+  }
+  searchButtons.forEach(btn => btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    runCheck();
+  }));
 
-    <!-- ========== ブレ撮り（※挙動は一切触らない） ========== -->
-    <section class="panel" id="blur-section">
-      <div class="panel__head">
-        <h2 class="panel__title">みんなのブレ撮り</h2>
-        <button id="blur-refresh" class="btn-grad" type="button">更新</button>
-      </div>
+  // ---- 検索実行 ------------------------------------------------------------
+  async function runCheck() {
+    const slug = normalize(input ? input.value : "");
+    if (!slug) { paintAllIdle(); showError(""); return; }
 
-      <!-- ↓ここのマークアップ・IDはそのまま維持（JSは別ファイルで既存のを使ってください） -->
-      <figure class="blur-card" id="blur-card">
-        <img id="blur-img" src="" alt="" decoding="async" />
-        <figcaption id="blur-cap" class="blur-cap"></figcaption>
-      </figure>
+    setLoading(true); showError("");
+    try {
+      const db = await loadAllOnce(); // 初回だけ全タブ取得＆キャッシュ
+      // 各カードを更新
+      document.querySelectorAll(".al-card").forEach(card => {
+        const key = card.dataset.key;
+        const has1 = db[key].al1.has(slug);
+        const has2 = db[key].al2.has(slug);
+        paintCard(card, has1, has2);
+      });
+    } catch (e) {
+      showError("取得エラー。時間をおいて再実行してください。");
+      paintAllIdle();
+    } finally {
+      setLoading(false);
+    }
+  }
 
-      <!-- 説明文の位置：カードの下（※テキストだけ。JSは触っていない） -->
-      <p class="panel-note">毎回ランダムに1枚表示。</p>
-    </section>
+  // ---- データ取得（CSVで1列目をslugとして読む） ----------------------------
+  let cachePromise = null;
+  function loadAllOnce() {
+    if (cachePromise) return cachePromise;
+    cachePromise = (async () => {
+      const entries = await Promise.all(
+        Object.entries(SHEETS).map(async ([key, cfg]) => {
+          const [al1, al2] = await Promise.all([
+            fetchCsvAsSet(cfg.al1).catch(() => new Set()),
+            fetchCsvAsSet(cfg.al2).catch(() => new Set()),
+          ]);
+          return [key, { al1, al2 }];
+        })
+      );
+      return Object.fromEntries(entries);
+    })();
+    return cachePromise;
+  }
 
-    <footer class="footer">© Me-Moon</footer>
-  </main>
+  async function fetchCsvAsSet(sheetName) {
+    if (!sheetName) return new Set();
+    const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq`
+              + `?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&t=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const text = await res.text();
 
-  <script src="./app.js" defer></script>
-  <!-- ブレ撮りの既存 JS がある場合はこの下に読み込んでください（※変更不要） -->
-  <!-- <script src="./blur.js" defer></script> -->
-</body>
-</html>
+    // 公開設定ミスなどでHTML返った場合を弾く
+    if (!res.ok || /^</.test(text)) throw new Error("sheet fetch failed");
+
+    const set = new Set();
+    text.split(/\r?\n/).forEach(line => {
+      if (!line) return;
+      const slug = normalize(line.split(",")[0]);
+      if (slug) set.add(slug);
+    });
+    return set;
+  }
+
+  // ---- 表示（カード・ピルの状態） -----------------------------------------
+  function renderEmptyCards() {
+    resultRoot.innerHTML = "";
+    const list = document.createElement("div");
+    list.className = "al-card-list";
+
+    Object.entries(SHEETS).forEach(([key, cfg]) => {
+      const card = document.createElement("section");
+      card.className = "al-card";
+      card.dataset.key = key;
+      card.innerHTML = `
+        <div class="al-card__head">
+          <span class="al-dot" style="background:${cfg.dot}"></span>
+          <h3 class="al-title">${cfg.label}</h3>
+        </div>
+        <div class="al-pill-row">
+          <button class="al-pill" data-phase="1" aria-pressed="false" disabled>AL①</button>
+          <button class="al-pill" data-phase="2" aria-pressed="false" disabled>AL②</button>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+
+    resultRoot.appendChild(list);
+    stylePills(); // 最低限の見た目（光る/暗くする）
+  }
+
+  function paintCard(card, has1, has2) {
+    const p1 = card.querySelector('.al-pill[data-phase="1"]');
+    const p2 = card.querySelector('.al-pill[data-phase="2"]');
+    setPillState(p1, has1 ? "on" : "off");
+    setPillState(p2, has2 ? "on" : "off");
+  }
+
+  function paintAllIdle() {
+    document.querySelectorAll(".al-pill").forEach(p => setPillState(p, "idle"));
+  }
+
+  function setPillState(el, state) {
+    const map = {
+      on:  { suffix:" ✓", opacity:1,   glow:"0 0 18px rgba(64,224,146,.55)", pressed:true,  disabled:false },
+      off: { suffix:" ×", opacity:.28, glow:"none",                           pressed:false, disabled:false },
+      idle:{ suffix:"",   opacity:.28, glow:"none",                           pressed:false, disabled:true  },
+    };
+    const s = map[state];
+    el.style.opacity  = s.opacity;
+    el.style.boxShadow= s.glow;
+    el.ariaPressed    = String(s.pressed);
+    el.disabled       = s.disabled;
+    el.textContent    = el.textContent.replace(/[\s✓×]+$/g,"") + s.suffix;
+  }
+
+  function stylePills() {
+    document.querySelectorAll(".al-pill").forEach(el => {
+      el.style.borderRadius = "9999px";
+      el.style.padding = "10px 18px";
+      el.style.fontWeight = "700";
+      el.style.letterSpacing = ".02em";
+      el.style.background = "rgba(255,255,255,.08)";
+      el.style.border = "1px solid rgba(255,255,255,.18)";
+      el.style.transition = "box-shadow .2s, opacity .2s, transform .06s";
+      el.style.color = "rgba(255,255,255,.92)";
+    });
+  }
+
+  function setLoading(is) {
+    document.querySelectorAll(".al-pill").forEach(el => {
+      el.style.transform = is ? "scale(.98)" : "scale(1)";
+    });
+  }
+
+  function showError(msg) {
+    errorBar.textContent = msg || "";
+    errorBar.style.display = msg ? "block" : "none";
+  }
+
+  // ---- ユーティリティ ------------------------------------------------------
+  function normalize(s) {
+    return (s || "").toString().trim().replace(/\u3000/g," ").toLowerCase();
+  }
+
+  function createResultRoot() {
+    const after = Array.from(document.querySelectorAll("*"))
+      .find(n => /照会結果/.test(n.textContent||""));
+    const root = document.createElement("section");
+    root.id = "al-results";
+    root.style.marginTop = "8px";
+    if (after && after.parentElement) after.parentElement.insertBefore(root, after.nextSibling);
+    else document.body.prepend(root);
+    return root;
+  }
+
+  function ensureErrorBar(root) {
+    let bar = root.querySelector(".al-error");
+    if (!bar) {
+      bar = document.createElement("p");
+      bar.className = "al-error";
+      bar.style.color = "#FFB4B4";
+      bar.style.margin = "10px 16px -6px";
+      bar.style.fontWeight = "600";
+      bar.style.display = "none";
+      root.prepend(bar);
+    }
+    return bar;
+  }
+})();
+</script>
