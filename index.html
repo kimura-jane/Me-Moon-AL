@@ -1,108 +1,56 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Me-Moon AL Checker</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#0c1b2a; --card:#0f2336; --card2:#0b1a2a; --chip:#1b2f45;
-    --fg:#e9f0f7; --muted:#9fb3c7; --accent1:#7ad7ff; --accent2:#c7a0ff;
-    --ring:rgba(122,215,255,.3);
-    --orange:#ffa01c; --green:#2dd38d; --purple:#b689ff; --pink:#ff80b3;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; font-family:"Zen Kaku Gothic New",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-    color:var(--fg);
-    background: radial-gradient(1200px 800px at 10% -10%, #123a50 0%, transparent 60%),
-                radial-gradient(1000px 700px at 110% 0%, #2a3d70 0%, transparent 60%),
-                var(--bg);
-  }
-  .wrap{max-width:920px; margin:0 auto; padding:20px 16px 64px}
-  header{display:flex; gap:16px; align-items:center; margin:8px 0 10px}
-  header .logo{width:48px;height:48px;border-radius:14px;background:#ffda67;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-  h1{font-size:34px;line-height:1.1;margin:0}
-  .sub{color:var(--muted); margin:6px 0 0}
-
-  .panel{background:linear-gradient(180deg,var(--card) 0%,var(--card2) 100%);
-         border-radius:22px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.05)}
-  .stack{display:flex; flex-direction:column; gap:14px}
-  .input{width:100%; padding:16px 18px; border-radius:16px; background:#0a1a28; color:var(--fg);
-         border:1px solid rgba(255,255,255,.06); font-size:18px}
-  .btn{width:100%; padding:16px; border:0; border-radius:16px; font-weight:700; font-size:18px; color:#07131e;
-       background:linear-gradient(90deg, var(--accent1), var(--accent2)); box-shadow:0 8px 24px var(--ring); cursor:pointer}
-  .btn:active{transform:translateY(1px)}
-
-  h2{font-size:22px;margin:22px 8px 10px}
-  .result-card{background:#0c2134;border:1px solid rgba(255,255,255,.05);border-radius:18px;padding:14px 14px 8px;margin-top:10px}
-  .item{background:#0b1e31;border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:18px;
-        display:flex; align-items:center; justify-content:space-between; gap:14px; margin:12px 0}
-  .left{display:flex; align-items:center; gap:12px}
-  .dot{width:14px;height:14px;border-radius:50%}
-  .title{font-size:22px; font-weight:700}
-  .chips{display:flex; gap:12px}
-  .chip{background:var(--chip); color:#f6e9ef; padding:10px 16px; border-radius:999px; border:1px solid rgba(255,255,255,.08);
-        font-weight:700; letter-spacing:.02em; min-width:84px; text-align:center}
-  .chip.ok{background:rgba(45,211,141,.12); border-color:rgba(45,211,141,.35)}
-  .chip.ng{background:rgba(255,128,179,.10); border-color:rgba(255,128,179,.35)}
-  .muted{color:var(--muted)}
-
-  /* gallery */
-  .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .muted2{color:#a9b7c6; font-size:14px; margin:4px 0 0; letter-spacing:.02em}
-  .gallery{margin-top:12px}
-  figure.blur-card{margin:12px 0 0; background:#061523; border:1px solid rgba(255,255,255,.06);
-    border-radius:20px; overflow:hidden; position:relative}
-  .blur-card img{width:100%; display:block}
-  figcaption{
-    position:absolute; left:12px; bottom:12px; padding:6px 10px; border-radius:12px;
-    backdrop-filter: blur(8px); background:rgba(0,0,0,.35); color:#fff; font-size:14px; border:1px solid rgba(255,255,255,.12);
-  }
-  /* “文字ブレ” トグル */
-  .blur-on{ filter: none; }
-  .blur-on.text-warp{ text-shadow: 0 0 2px rgba(255,255,255,.9), 2px 0 0 rgba(255,255,255,.5), -2px 0 0 rgba(255,255,255,.5); }
-  .caption-blur{ filter: blur(1.5px) contrast(1.2) saturate(1.1); }
-
-  footer{margin:40px 0 0; text-align:center; color:var(--muted)}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Me-Moon AL Checker</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="logo" aria-hidden="true"></div>
-      <div>
-        <h1>Me-Moon AL Checker</h1>
-        <div class="sub">slug を入力して検索</div>
+  <header class="hero">
+    <div class="brand">
+      <div class="logo"></div>
+      <div class="titlewrap">
+        <h1 class="title">Me-Moon AL Checker</h1>
+        <p class="subtitle">slug を入力して検索</p>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <section class="panel">
-      <div class="stack">
-        <input id="slug" class="input" placeholder="slug を入力" autocomplete="off">
-        <button id="searchBtn" class="btn">検索</button>
-      </div>
-
-      <h2>照会結果</h2>
-      <div id="resultBox" class="result-card muted">未検索です。</div>
+  <main class="container">
+    <!-- 検索 -->
+    <section class="card">
+      <form id="searchForm" autocomplete="off">
+        <input id="slugInput" class="input" placeholder="slug を入力" inputmode="latin" />
+        <button id="searchBtn" class="btn-grad" type="submit">検索</button>
+      </form>
     </section>
 
-    <h2>AL の種類</h2>
-    <section id="catalog" class="panel"></section>
+    <!-- 照会結果 -->
+    <section id="resultWrap" class="card">
+      <h2 class="h2">照会結果</h2>
+      <div id="resultBox" class="result-box muted">未検索です。</div>
+      <div id="resultList" class="result-list"></div>
+    </section>
 
-    <h2 class="section-head">
-      <span>みんなのブレ撮り</span>
-      <button id="galleryRefresh" class="btn" style="width:auto; min-width:120px; padding:10px 16px; font-size:16px;">更新</button>
-    </h2>
-    <div class="muted2">毎回ランダムに1枚表示。キャプションをタップで “文字ブレ”。</div>
-    <section class="gallery" id="gallery"></section>
+    <!-- カタログ（固定表示） -->
+    <section class="card">
+      <h2 class="h2">AL の種類</h2>
+      <div id="catalog" class="catalog"></div>
+    </section>
 
-    <footer>© Me-Moon</footer>
-  </div>
+    <!-- みんなのブレ撮り -->
+    <section class="card">
+      <div class="card-head">
+        <h2 class="h2">みんなのブレ撮り</h2>
+        <button id="blurRefresh" class="btn-chip" type="button">更新</button>
+      </div>
+      <p class="note">毎回ランダムに1枚表示。キャプションをタップで“文字ブレ”。</p>
+      <figure id="blurCard" class="blur-card"></figure>
+    </section>
 
-  <script src="./app.js" defer></script>
+    <footer class="foot">© Me-Moon</footer>
+  </main>
 </body>
 </html>
