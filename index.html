@@ -205,8 +205,6 @@ h1{margin:0 0 6px;font-size:28px}
         </div>
       </div>
 
-      <p class="note">対象は **完全一致（大小区別なし・-/_ は同一扱い）**。行が複数あれば件数をカウントします。</p>
-
       <!-- みんなのブレ撮り（触らない） -->
       <div class="resultHead" style="margin-top:26px">
         <h2 class="section-title" style="margin:0">みんなのブレ撮り</h2>
@@ -218,7 +216,6 @@ h1{margin:0 0 6px;font-size:28px}
           <img id="blurImg" class="blurImg" alt="ブレ撮り">
           <div id="blurCap" class="cap"></div>
         </div>
-        <p class="help">毎回ランダムに1枚表示。</p>
       </div>
     </div>
 
@@ -265,7 +262,6 @@ function gvizUrl(sheet){
   return `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}`;
 }
 function parseGViz(txt){
-  // /*O_o*/google.visualization.Query.setResponse({...});
   const i = txt.indexOf('{'); const j = txt.lastIndexOf('}');
   if(i<0||j<0) throw new Error('GViz parse error');
   return JSON.parse(txt.substring(i, j+1));
@@ -278,13 +274,12 @@ async function trySheets(sheetCandidates){
       const t = await r.text();
       const data = parseGViz(t);
       const rows = (data.table.rows||[]).map(row=>{
-        // row.c はセル配列。文字化して1行テキスト化
         return (row.c||[]).map(c => (c&&c.v!=null? String(c.v):'')).join('\t');
       });
-      return rows; // 成功した最初のシートを返す
-    }catch(e){/* 次候補へ */}
+      return rows;
+    }catch(e){}
   }
-  return null; // どれも失敗
+  return null;
 }
 function normSlug(s){
   const v = (s||'').trim().toLowerCase();
@@ -300,7 +295,6 @@ function countHit(rows, slug){
   let cnt = 0;
   for(const line of rows){
     const L = String(line||'').trim().toLowerCase();
-    // 完全一致（セルつなぎのため、タブ区切りの単語に一致）
     const parts = L.split(/\t/).map(x=>x.trim());
     for(const v of vars){
       if(parts.includes(v)) { cnt++; break; }
@@ -311,7 +305,7 @@ function countHit(rows, slug){
 function setPill(cardKey, type, count){
   const card = document.querySelector(`.card[data-key="${cardKey}"]`);
   const pill = card.querySelector(`.pill[data-type="${type}"]`);
-  pill.classList.remove('on','off'); // いったん外す
+  pill.classList.remove('on','off');
   if(count>0){
     pill.classList.add('on');
     pill.querySelector('.mark').textContent='○';
@@ -327,7 +321,6 @@ function setPill(cardKey, type, count){
 async function runSearch(){
   const slug = normSlug(input.value);
   who.textContent = slug || '—';
-  // 初期化（全部×に戻す）
   for(const key of Object.keys(CONFIG)){
     setPill(key,'al1',0);
     setPill(key,'al2',0);
@@ -342,7 +335,6 @@ async function runSearch(){
 
   try{
     const results = {};
-    // カテゴリ毎に AL①/AL② を並列取得
     await Promise.all(Object.entries(CONFIG).map(async ([key,conf])=>{
       const [rows1, rows2] = await Promise.all([
         trySheets(conf.al1),
@@ -354,7 +346,6 @@ async function runSearch(){
       };
     }));
 
-    // 反映
     for(const [k,v] of Object.entries(results)){
       setPill(k, 'al1', v.al1);
       setPill(k, 'al2', v.al2);
@@ -379,7 +370,6 @@ const blurCap = $('#blurCap');
 const btnRefresh = $('#refreshBlur');
 
 function parseCaptionFromName(filename){
-  // 例) "hidamari-neko_2025-09-01.jpg" -> {name:"hidamari-neko", date:"2025-09-01"}
   const base = filename.replace(/\.[^.]+$/,'');
   const m = base.match(/(.+)[\s_/-]+(\d{4}-\d{2}-\d{2})$/);
   if(m) return {name:m[1], date:m[2]};
@@ -394,7 +384,6 @@ async function loadRandomBlur(){
     const arr = man.images || [];
     if(!arr.length) return;
     const pick = arr[Math.floor(Math.random()*arr.length)];
-    // pick = { file, label? }
     blurImg.src = './blurs/' + pick.file;
     const meta = pick.label ? pick.label : parseCaptionFromName(pick.file);
     const cap = (typeof meta === 'string') ? meta : `${meta.name} / ${meta.date || ''}`.trim();
@@ -404,7 +393,7 @@ async function loadRandomBlur(){
   }
 }
 btnRefresh.addEventListener('click', loadRandomBlur);
-loadRandomBlur(); // 初回
+loadRandomBlur();
 </script>
 </body>
 </html>
