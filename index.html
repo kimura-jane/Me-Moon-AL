@@ -1,147 +1,100 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Me-Moon AL Checker</title>
-  <link rel="icon" href="icon.png" />
   <style>
     :root{
-      --bg:#0b1730;
-      --panel:#0f1e3d;
-      --panel-2:#0b1530;
-      --text:#eaf1ff;
-      --muted:#9fb0d0;
-      --chip:#1b2b52;
-      --chip-border:rgba(255,255,255,.12);
-      --grad:linear-gradient(90deg,#7ee0ff,#c3a6ff);
-      --ring:rgba(126,224,255,.25);
-      --shadow:0 6px 24px rgba(3,10,30,.45);
-      --radius:18px;
+      --bg1:#0a1a2b; --bg2:#0f2641; --panel:#0e2238; --panel2:#0b1b2d;
+      --text:#eaf4ff; --muted:#98a9c0; --chip:#1b2f4a; --chipStroke:#2a405f;
+      --grad1:#8ee7ff; --grad2:#bfa7ff; --ok:#ffc24b; --nft:#33de8b; --guild:#b389ff; --hello:#ff8ec4;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;background:radial-gradient(1200px 1200px at 20% -20%,#13305f 0%,transparent 60%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",Roboto,Arial,sans-serif}
-    .wrap{padding:20px env(safe-area-inset-right) 56px env(safe-area-inset-left);max-width:860px;margin:0 auto}
-    header{display:flex;align-items:center;gap:14px;margin:12px 0 10px}
-    header .logo{width:44px;height:44px;border-radius:12px;box-shadow:var(--shadow);background:#0e2546 url('icon.png') center/84% no-repeat}
-    h1{font-size:28px;line-height:1.2;margin:0}
-    .sub{color:var(--muted);margin-top:4px}
-
-    .card{background:linear-gradient( to bottom right, rgba(255,255,255,.04), rgba(255,255,255,.02) ), var(--panel);
-      border:1px solid rgba(255,255,255,.08); border-radius:22px; box-shadow:var(--shadow); overflow:visible}
-    .card .inner{padding:18px 18px}
-
-    /* フォーム */
-    .field{display:flex;gap:14px;flex-direction:column;padding:18px}
-    .input{background:var(--panel-2);border:1px solid rgba(255,255,255,.12);border-radius:16px;height:56px;padding:0 16px;font-size:18px;color:var(--text);outline:none}
-    .btn{height:52px;border-radius:16px;border:none;background:var(--grad);color:#0e1330;font-weight:700;letter-spacing:.12em}
-    .btn:active{transform:translateY(1px)}
-
-    /* 結果カード（隠れ対策） */
-    #resultCard{margin-top:10px}
-    #result{display:flex;flex-direction:column;gap:14px;padding:14px 16px 20px 16px;overflow:visible}
-    .al-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 16px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);border-radius:18px}
-    .al-left{display:flex;align-items:center;gap:12px;min-width:0}
-    .dot{width:14px;height:14px;border-radius:50%}
-    .name{font-size:20px;font-weight:800;letter-spacing:.06em;white-space:nowrap}
-    .al-right{display:flex;gap:10px;flex-wrap:wrap}
-    .chip{background:var(--chip);border:1px solid var(--chip-border);color:#cfe1ff;padding:8px 14px;border-radius:999px;font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
-    .chip.on{background:rgba(126,224,255,.12);border-color:var(--ring);box-shadow:0 0 0 3px var(--ring) inset;color:#fff}
-
-    /* ALの種類表示（下） */
-    section.types{margin-top:28px}
-    .type-card{margin:16px 0;padding:18px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(255,255,255,.02)}
-
-    /* みんなのブレ撮り */
-    .blurs-head{display:flex;justify-content:space-between;align-items:flex-end;margin:24px 6px 10px}
-    .head-title{font-size:22px;font-weight:800}
-    .small{color:var(--muted);font-size:13px}
-    #refreshBlurs{width:180px}
-    #blursSpot{padding:6px}
-    .polaroid{position:relative;border-radius:22px;overflow:hidden;
-      background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);
-      box-shadow:0 12px 40px rgba(3,10,30,.55);aspect-ratio:4/3;animation:pop .28s ease-out}
-    .polaroid img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.04)}
-    .caption{position:absolute;left:12px;bottom:12px;padding:6px 12px;border-radius:999px;
-      color:#eaf1ff;background:rgba(10,15,35,.55);border:1px solid rgba(255,255,255,.14);
-      backdrop-filter:blur(8px) saturate(1.2);-webkit-backdrop-filter:blur(8px) saturate(1.2);font-weight:700;font-size:13px}
-    /* テキスト“ブレ”の遊び */
-    .caption.motion-blur{filter:blur(.5px) contrast(1.06);text-shadow:0 0 10px rgba(195,166,255,.4)}
-    @keyframes pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
-
-    /* 小さめ端末余白 */
-    @media (max-width:420px){
-      .input{height:52px}
-      .btn{height:48px}
-      .name{font-size:18px}
+    html,body{margin:0;background:radial-gradient(1200px 700px at 20% -10%,#14486633,transparent) , linear-gradient(180deg,var(--bg1),var(--bg2)); color:var(--text); font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;}
+    .wrap{max-width:880px;margin:24px auto;padding:0 16px 48px}
+    header{display:flex;gap:14px;align-items:center;margin-bottom:18px}
+    header h1{font-size:28px;line-height:1.1;margin:0}
+    header p{margin:2px 0 0;color:var(--muted)}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid #1b314f; border-radius:18px; box-shadow:0 10px 30px #00000044; padding:18px}
+    .input{width:100%;background:#0b1a2a;border:1px solid #1a3150;border-radius:14px;color:var(--text);height:56px;padding:0 16px;font-size:18px}
+    .bar{display:flex;flex-direction:column;gap:14px}
+    .btn{height:52px;border:0;border-radius:14px;color:#071221;font-weight:700;font-size:16px;background:linear-gradient(90deg,var(--grad1),var(--grad2));}
+    .btn:active{transform:translateY(1px);opacity:.92}
+    .sectionTitle{font-size:22px;margin:30px 0 14px}
+    /* Result panel */
+    #resultPanel{margin-top:14px}
+    #resultTitle{color:var(--muted);margin:0 0 8px}
+    .chips{display:flex;flex-wrap:wrap;gap:12px}
+    .chip{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:var(--chip);border:1px solid var(--chipStroke); color:var(--text); box-shadow:inset 0 -2px 0 #00000022}
+    .dot{width:12px;height:12px;border-radius:50%}
+    /* AL list */
+    .alList{display:grid;gap:16px}
+    .alCard{background:linear-gradient(180deg,#0f2238,#0b1a2c);border:1px solid #1a2e4a;border-radius:18px;padding:18px}
+    .alHead{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+    .alName{font-size:20px;font-weight:700;letter-spacing:.02em}
+    .alChips{display:flex;gap:12px;flex-wrap:wrap}
+    .oval{padding:9px 16px;border-radius:999px;background:#162741;border:1px solid #2a405f;color:#cfe2ff}
+    /* Bure photo */
+    #bureHead{display:flex;align-items:center;justify-content:space-between;margin-top:34px}
+    #refreshBlurBtn{width:160px}
+    #bureCard{margin-top:14px;overflow:hidden;border-radius:20px;background:#0b1726;border:1px solid #1b2f4a}
+    #bureImg{width:100%;display:block;aspect-ratio:4/3;object-fit:cover}
+    #bureCaption{position:relative;display:inline-block;margin:10px 14px;padding:6px 10px;border-radius:10px;background:rgba(9,16,28,.7);backdrop-filter:blur(6px); border:1px solid #2a405f; color:#eaf2ff; font-size:14px}
+    /* glitch text effect */
+    .glitch{animation:gl 600ms steps(12) 1}
+    @keyframes gl{
+      0% { text-shadow: -2px -1px 0 #ff3e, 2px 1px 0 #3ef; transform:translate(0,0) }
+      20%{ text-shadow: 3px 0 0 #ff3e, -3px 0 0 #3ef; transform:translate(-.5px,.5px) }
+      40%{ text-shadow: -4px 0 0 #ff3e, 4px 0 0 #3ef; transform:translate(.4px,-.4px) }
+      60%{ text-shadow: 2px 1px 0 #ff3e, -2px -1px 0 #3ef; transform:translate(-.3px,.3px) }
+      80%{ text-shadow: -3px -1px 0 #ff3e, 3px 1px 0 #3ef; transform:translate(.3px,-.3px) }
+      100%{ text-shadow:none; transform:none }
     }
+    /* helpers */
+    .muted{color:var(--muted)}
+    .space{height:20px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <div class="logo" aria-hidden="true"></div>
+      <div style="width:48px;height:48px;border-radius:14px;background:radial-gradient(circle at 30% 30%,#ffd12e 0 40%,transparent 41%),#0e2a44;border:1px solid #24466f;"></div>
       <div>
         <h1>Me-Moon AL Checker</h1>
-        <div class="sub">slugを入力して検索</div>
+        <p>slugを入力して検索</p>
       </div>
     </header>
 
-    <div class="card">
-      <div class="field">
-        <input id="slugInput" class="input" placeholder="例: me-moon / kimura_jane" inputmode="latin" />
-        <button id="searchBtn" class="btn">検索</button>
+    <section class="card">
+      <div class="bar">
+        <input id="slugInput" class="input" autocomplete="off" placeholder="例）me-moon / kimura_jane など">
+        <button id="searchBtn" class="btn" type="button">検索</button>
       </div>
 
-      <!-- 検索結果 -->
-      <div id="resultCard" class="card" style="margin:0 18px 18px">
-        <div class="inner" style="padding:14px 14px 0 14px">
-          <div id="resultTitle" class="small">照会:</div>
-        </div>
-        <div id="result"></div>
-      </div>
-    </div>
-
-    <!-- 下部：ALの種類（説明カードはそのまま） -->
-    <section class="types">
-      <h2 class="head-title" style="margin:0 6px 6px">AL の種類</h2>
-      <div class="type-card">
-        <div class="al-row">
-          <div class="al-left"><span class="dot" style="background:#ffa31a"></span><span class="name">チャージ</span></div>
-          <div class="al-right"><span class="chip">AL①</span><span class="chip">AL②</span></div>
-        </div>
-      </div>
-      <div class="type-card">
-        <div class="al-row">
-          <div class="al-left"><span class="dot" style="background:#31e28d"></span><span class="name">NFTコラボ</span></div>
-          <div class="al-right"><span class="chip">AL①</span><span class="chip">AL②</span></div>
-        </div>
-      </div>
-      <div class="type-card">
-        <div class="al-row">
-          <div class="al-left"><span class="dot" style="background:#b78cff"></span><span class="name">ギルドミッション</span></div>
-          <div class="al-right"><span class="chip">AL①</span><span class="chip">AL②</span></div>
-        </div>
-      </div>
-      <div class="type-card">
-        <div class="al-row">
-          <div class="al-left"><span class="dot" style="background:#ff73b8"></span><span class="name">挨拶タップ</span></div>
-          <div class="al-right"><span class="chip">AL①</span><span class="chip">AL②</span></div>
+      <div id="resultPanel" class="card" style="margin-top:16px">
+        <p id="resultTitle" class="muted">照会: <span id="q">-</span></p>
+        <div id="resultBody">
+          <div class="muted">該当なし。slugを確認。</div>
         </div>
       </div>
     </section>
 
-    <!-- みんなのブレ撮り -->
-    <div class="blurs-head">
-      <div>
-        <div class="head-title">みんなのブレ撮り</div>
-        <div class="small">毎回ランダムに1枚表示。キャプションをタップで“文字ブレ”。</div>
-      </div>
-      <button id="refreshBlurs" class="btn">更新</button>
+    <h2 class="sectionTitle">AL の種類</h2>
+    <div id="alList" class="alList"></div>
+
+    <div id="bureHead">
+      <h2 class="sectionTitle" style="margin:0">みんなのブレ撮り</h2>
+      <button id="refreshBlurBtn" class="btn" type="button">更新</button>
     </div>
-    <div id="blursSpot"></div>
+    <figure id="bureCard" class="card" style="padding:0">
+      <img id="bureImg" alt="">
+      <figcaption id="bureCaption" title="タップで文字ブレ">-</figcaption>
+    </figure>
+
+    <div class="space"></div>
   </div>
 
-  <script defer src="app.js"></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
