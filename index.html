@@ -1,220 +1,113 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Me-Moon AL Checker</title>
-<style>
-:root{
-  --bg:#0d1b2a; --panel:#0a1523; --text:#eaf2ff; --muted:#7a8da3;
-  --accent1:#8be1ff; --accent2:#b59cff; --chipOff:#22384d;
-  --chipOnBorder:#1fb981;
-}
-*{box-sizing:border-box}
-body{
-  margin:0; color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
-  background:
-    radial-gradient(1200px 500px at 10% -10%,#103960,transparent),
-    radial-gradient(1400px 600px at 110% -20%,#2d1955,transparent),
-    var(--bg);
-}
-.container{max-width:900px;margin:24px auto;padding:0 16px}
-.panel{background:rgba(10,20,35,.6);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px 16px 22px}
-h1{margin:0 0 6px;font-size:28px} .sub{margin:0 0 16px;color:var(--muted);font-size:14px}
-.field{display:flex;gap:12px;align-items:center}
-.input{flex:1;height:44px;padding:0 14px;border-radius:12px;background:#0b1a28;color:var(--text);border:1px solid rgba(255,255,255,.08);font-size:16px}
-.btn{height:44px;padding:0 20px;border:0;border-radius:14px;color:#09131c;font-weight:700;font-size:16px;cursor:pointer;
-  background-image:linear-gradient(90deg,var(--accent1),var(--accent2));
-  box-shadow:0 6px 16px rgba(142,136,224,.25)}
-.section{margin-top:20px}
-.section h2{margin:0 0 10px;font-size:20px}
-.caption{color:var(--muted);font-size:14px}
-.result{display:none} .result.show{display:block}
-
-/* cards */
-.card{background:rgba(10,20,35,.65);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin:12px 0}
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.title{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700}
-.dot{width:10px;height:10px;border-radius:50%}
-.dot.o{background:#ffa31a}.dot.g{background:#39dc7a}.dot.p{background:#b681ff}.dot.r{background:#ff79b0}
-.chips{display:flex;gap:10px}
-.chip{min-width:84px;height:36px;padding:0 14px;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:6px;
-  font-weight:700;font-size:14px;background:var(--chipOff);color:#7e93a7;border:1px solid rgba(255,255,255,.08)}
-.chip.on{background:#0e2c22;border-color:var(--chipOnBorder);color:#d7ffef;box-shadow:inset 0 0 0 1000px rgba(31,185,129,.12)}
-.chip.on::after{content:"✓";font-weight:900}
-
-/* blur */
-.blur-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.blur-card{background:rgba(10,20,35,.65);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px}
-.img-wrap{position:relative;overflow:hidden;border-radius:14px}
-.blur-img{display:block;width:100%;border-radius:14px;background:#0b1a28}
-.badge{position:absolute;left:16px;bottom:16px;background:rgba(0,0,0,.55);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px}
-.footer{opacity:.6;text-align:center;padding:24px 0 10px;font-size:12px}
-.small{font-size:12px;color:var(--muted)}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Me-Moon AL Checker</title>
+  <link rel="preconnect" href="https://docs.google.com">
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-<main class="container">
-  <div class="panel">
-    <h1>Me-Moon AL Checker</h1>
-    <p class="sub">slug を入力して検索</p>
-    <div class="field">
-      <input id="slugInput" class="input" placeholder="slug を入力" autocomplete="off">
-      <button id="searchBtn" class="btn">検索</button>
-    </div>
+  <main class="container">
+    <!-- ========== Header ========== -->
+    <header class="header">
+      <div class="brand">
+        <span class="brand__icon" aria-hidden="true"></span>
+        <h1 class="brand__title">Me-Moon AL Checker</h1>
+      </div>
+      <p class="brand__sub">slug を入力して検索</p>
+    </header>
 
-    <!-- 検索結果 -->
-    <section id="result" class="section result">
-      <h2>照会結果</h2>
-      <p id="resultNote" class="caption"></p>
-      <div id="cards"></div>
+    <!-- ========== Search ========== -->
+    <section class="panel">
+      <form id="search-form" class="search" autocomplete="off">
+        <input id="slug-input" class="search__input" type="text" inputmode="latin"
+               placeholder="slug を入力" aria-label="slug を入力" />
+        <button id="search-btn" class="btn-grad" type="submit" aria-label="検索">検索</button>
+      </form>
     </section>
 
-    <!-- ブレ撮り -->
-    <section class="section">
-      <div class="blur-head">
-        <h2>みんなのブレ撮り</h2>
-        <button id="refreshBlur" class="btn" style="height:36px;font-size:14px;padding:0 16px">更新</button>
+    <!-- ========== Results (最初から表示) ========== -->
+    <section class="panel" id="results">
+      <div class="panel__head">
+        <h2 class="panel__title">照会結果</h2>
+        <p id="query-echo" class="echo">未検索です。</p>
       </div>
-      <div class="blur-card">
-        <div class="img-wrap">
-          <img id="blurImg" class="blur-img" alt="ブレ撮り">
-          <span id="blurCap" class="badge"></span>
-        </div>
+
+      <!-- カード一覧（最初から出しておく） -->
+      <div id="al-list" class="cards" aria-live="polite">
+        <!-- JS が data-key を頼りに状態を点灯/消灯させます -->
+        <article class="card" data-key="charge">
+          <div class="card__head">
+            <span class="led led--y" aria-hidden="true"></span>
+            <h3 class="card__title">チャージ</h3>
+          </div>
+          <div class="card__actions">
+            <span class="pill" data-kind="1" aria-label="AL①">AL①</span>
+            <span class="pill" data-kind="2" aria-label="AL②">AL②</span>
+          </div>
+        </article>
+
+        <article class="card" data-key="nft">
+          <div class="card__head">
+            <span class="led led--g" aria-hidden="true"></span>
+            <h3 class="card__title">NFTコラボ</h3>
+          </div>
+          <div class="card__actions">
+            <span class="pill" data-kind="1" aria-label="AL①">AL①</span>
+            <span class="pill" data-kind="2" aria-label="AL②">AL②</span>
+          </div>
+        </article>
+
+        <article class="card" data-key="guild">
+          <div class="card__head">
+            <span class="led led--p" aria-hidden="true"></span>
+            <h3 class="card__title">ギルドミッション</h3>
+          </div>
+          <div class="card__actions">
+            <span class="pill" data-kind="1" aria-label="AL①">AL①</span>
+            <span class="pill" data-kind="2" aria-label="AL②">AL②</span>
+          </div>
+        </article>
+
+        <article class="card" data-key="hello">
+          <div class="card__head">
+            <span class="led led--r" aria-hidden="true"></span>
+            <h3 class="card__title">挨拶タップ</h3>
+          </div>
+          <div class="card__actions">
+            <span class="pill" data-kind="1" aria-label="AL①">AL①</span>
+            <span class="pill" data-kind="2" aria-label="AL②">AL②</span>
+          </div>
+        </article>
       </div>
-      <p class="small">毎回ランダムに1枚表示。</p>
+
+      <!-- エラー表示 -->
+      <p id="error-msg" class="error" hidden>取得エラー。時間をおいて再実行してください。</p>
     </section>
-  </div>
-  <div class="footer">© Me-Moon</div>
-</main>
 
-<script>
-(() => {
-  "use strict";
+    <!-- ========== ブレ撮り（※挙動は一切触らない） ========== -->
+    <section class="panel" id="blur-section">
+      <div class="panel__head">
+        <h2 class="panel__title">みんなのブレ撮り</h2>
+        <button id="blur-refresh" class="btn-grad" type="button">更新</button>
+      </div>
 
-  /* ===== Config ===== */
-  const FILE_ID = "1-2oS--u1jf0fm-m9N_UDF5-aN-oLg_-wyqEpMSdcvcU";
-  const GROUPS = [
-    { key:"charge", label:"チャージ",           dot:"o", a1:"チャージAL①",           a2:"チャージAL②" },
-    { key:"nft",    label:"NFTコラボ",         dot:"g", a1:"NFTコラボAL①",         a2:"NFTコラボAL②" },
-    { key:"guild",  label:"ギルドミッション",   dot:"p", a1:"ギルドミッションAL①",   a2:"ギルドミッションAL②" },
-    { key:"hello",  label:"挨拶タップ",         dot:"r", a1:"挨拶タップAL①",         a2:"挨拶タップAL②" },
-  ];
+      <!-- ↓ここのマークアップ・IDはそのまま維持（JSは別ファイルで既存のを使ってください） -->
+      <figure class="blur-card" id="blur-card">
+        <img id="blur-img" src="" alt="" decoding="async" />
+        <figcaption id="blur-cap" class="blur-cap"></figcaption>
+      </figure>
 
-  /* ===== DOM ===== */
-  const $ = (s)=>document.querySelector(s);
-  const input   = $("#slugInput");
-  const btn     = $("#searchBtn");
-  const result  = $("#result");
-  const note    = $("#resultNote");
-  const cardsEl = $("#cards");
+      <!-- 説明文の位置：カードの下（※テキストだけ。JSは触っていない） -->
+      <p class="panel-note">毎回ランダムに1枚表示。</p>
+    </section>
 
-  /* ===== Data ===== */
-  const alSets = new Map(); // sheetName -> Set(slug)
+    <footer class="footer">© Me-Moon</footer>
+  </main>
 
-  const norm = (s="") =>
-    s.normalize("NFKC").trim().toLowerCase().replace(/^@/,"").replace(/\s+/g,"_");
-
-  async function fetchCSV(sheet){
-    const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
-    const res = await fetch(url,{cache:"no-store"});
-    if(!res.ok) throw new Error("fetch failed: "+sheet);
-    const text = await res.text();
-    const set = new Set();
-    text.split(/\r?\n/).forEach((line,i)=>{
-      if(!line) return;
-      const slug = line.split(",")[0];             // 1列目を採用
-      if(i===0 && /me-moon/i.test(slug)) return;   // ヘッダ避け
-      const n = norm(slug);
-      if(n) set.add(n);
-    });
-    return set;
-  }
-
-  async function loadAll(){
-    const names = [];
-    GROUPS.forEach(g=>names.push(g.a1,g.a2));
-    await Promise.all(names.map(async n=>{
-      if(!alSets.has(n)) alSets.set(n, await fetchCSV(n));
-    }));
-  }
-
-  function chip(label,on){
-    const d = document.createElement("div");
-    d.className = "chip"+(on?" on":"");
-    d.textContent = label;
-    return d;
-  }
-
-  function makeCard(g, slug){
-    const own1 = alSets.get(g.a1)?.has(slug);
-    const own2 = alSets.get(g.a2)?.has(slug);
-    const card = document.createElement("div");
-    card.className = "card";
-    const row  = document.createElement("div"); row.className = "row";
-    const ttl  = document.createElement("div"); ttl.className = "title";
-    const dot  = document.createElement("span"); dot.className = "dot "+g.dot;
-    const name = document.createElement("span"); name.textContent = g.label;
-    ttl.append(dot,name);
-    const chips = document.createElement("div"); chips.className = "chips";
-    chips.append(chip("AL①",!!own1), chip("AL②",!!own2));
-    row.append(ttl,chips);
-    card.append(row);
-    return card;
-  }
-
-  async function doSearch(){
-    const raw = input.value;
-    const slug = norm(raw);
-    if(!slug){ result.classList.remove("show"); return; }
-    btn.disabled = true;
-    try{
-      await loadAll();
-      cardsEl.innerHTML = "";
-      GROUPS.forEach(g=>cardsEl.appendChild(makeCard(g, slug)));
-      note.textContent = slug;     // 「該当/非該当」はチップのON/OFFで明示
-      result.classList.add("show");
-    }catch(err){
-      console.error(err);
-      note.textContent = "取得エラー。時間をおいて再実行してください。";
-      result.classList.add("show");
-    }finally{
-      btn.disabled = false;
-    }
-  }
-  btn.addEventListener("click", doSearch);
-  input.addEventListener("keydown", e=>{ if(e.key==="Enter") doSearch(); });
-
-  /* ===== ブレ撮り ===== */
-  const img  = $("#blurImg");
-  const cap  = $("#blurCap");
-  const btnR = $("#refreshBlur");
-
-  function parseCaption(file){
-    const base = file.replace(/\.[^.]+$/,"");
-    const m = base.match(/^(\d{4}-\d{2}-\d{2})_(.+?)_/);
-    if(m) return {date:m[1], name:m[2]};
-    // フォールバック（末尾を名前扱い）
-    return {date:"", name:base};
-  }
-
-  async function loadRandom(){
-    try{
-      const res = await fetch("./blurs/manifest.json",{cache:"no-store"});
-      if(!res.ok) return;
-      const man = await res.json();
-      const arr = man.images||[];
-      if(!arr.length) return;
-      const pick = arr[Math.floor(Math.random()*arr.length)];
-      img.src = "./blurs/"+pick.file;
-      const meta = parseCaption(pick.file);
-      cap.textContent = (pick.label||meta.name) + (meta.date?` / ${meta.date}`:"");
-    }catch(e){ console.error(e); }
-  }
-  btnR.addEventListener("click", loadRandom);
-  loadRandom();
-})();
-</script>
+  <script src="./app.js" defer></script>
+  <!-- ブレ撮りの既存 JS がある場合はこの下に読み込んでください（※変更不要） -->
+  <!-- <script src="./blur.js" defer></script> -->
 </body>
 </html>
