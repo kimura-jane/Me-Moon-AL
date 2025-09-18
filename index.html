@@ -1,190 +1,220 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Me-Moon AL Checker</title>
-  <meta name="color-scheme" content="dark light">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Me-Moon AL Checker</title>
+<style>
+:root{
+  --bg:#0d1b2a; --panel:#0a1523; --text:#eaf2ff; --muted:#7a8da3;
+  --accent1:#8be1ff; --accent2:#b59cff; --chipOff:#22384d;
+  --chipOnBorder:#1fb981;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  background:
+    radial-gradient(1200px 500px at 10% -10%,#103960,transparent),
+    radial-gradient(1400px 600px at 110% -20%,#2d1955,transparent),
+    var(--bg);
+}
+.container{max-width:900px;margin:24px auto;padding:0 16px}
+.panel{background:rgba(10,20,35,.6);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px 16px 22px}
+h1{margin:0 0 6px;font-size:28px} .sub{margin:0 0 16px;color:var(--muted);font-size:14px}
+.field{display:flex;gap:12px;align-items:center}
+.input{flex:1;height:44px;padding:0 14px;border-radius:12px;background:#0b1a28;color:var(--text);border:1px solid rgba(255,255,255,.08);font-size:16px}
+.btn{height:44px;padding:0 20px;border:0;border-radius:14px;color:#09131c;font-weight:700;font-size:16px;cursor:pointer;
+  background-image:linear-gradient(90deg,var(--accent1),var(--accent2));
+  box-shadow:0 6px 16px rgba(142,136,224,.25)}
+.section{margin-top:20px}
+.section h2{margin:0 0 10px;font-size:20px}
+.caption{color:var(--muted);font-size:14px}
+.result{display:none} .result.show{display:block}
 
-  <!-- ===== minimal styles（JSが付ける .on / .off で判別しやすく） ===== -->
-  <style>
-    :root{
-      --bg:#0b1622; --card:#0f2233; --card-2:#11293e; --text:#eaf2fb;
-      --muted:#9bb2c8; --ring:#203a54; --shadow:rgba(0,0,0,.35);
-      --pill:#1a2f44; --pill-bd:#2b4866; --ok:#7ce2a0; --ng:#70839a;
-      --g1:#a8e6ff; --g2:#caa8ff;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
-    .wrap{max-width:820px;margin:0 auto;padding:24px 18px 56px}
-    header{display:flex;gap:12px;align-items:center;margin:4px 0 20px}
-    .logo{width:44px;height:44px;border-radius:12px;background:#ffe17d;box-shadow:0 10px 30px var(--shadow)}
-    h1{font-weight:800;font-size:clamp(22px,4.5vw,36px);line-height:1.1;margin:0}
-    .sub{color:var(--muted);margin-top:6px}
+/* cards */
+.card{background:rgba(10,20,35,.65);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin:12px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.title{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot.o{background:#ffa31a}.dot.g{background:#39dc7a}.dot.p{background:#b681ff}.dot.r{background:#ff79b0}
+.chips{display:flex;gap:10px}
+.chip{min-width:84px;height:36px;padding:0 14px;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:6px;
+  font-weight:700;font-size:14px;background:var(--chipOff);color:#7e93a7;border:1px solid rgba(255,255,255,.08)}
+.chip.on{background:#0e2c22;border-color:var(--chipOnBorder);color:#d7ffef;box-shadow:inset 0 0 0 1000px rgba(31,185,129,.12)}
+.chip.on::after{content:"✓";font-weight:900}
 
-    .card{background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--ring);
-      border-radius:18px;box-shadow:0 10px 30px var(--shadow);padding:18px;margin:18px 0}
-    .field{display:flex;flex-direction:column;gap:12px}
-    .input{
-      width:100%;padding:16px 16px;border-radius:14px;background:#0a1a28;border:1px solid var(--ring);
-      color:var(--text);font-size:18px;outline:none;box-shadow:inset 0 0 0 1px transparent;
-    }
-    .btn{
-      display:inline-flex;justify-content:center;align-items:center;gap:8px;
-      width:100%;padding:14px 16px;border-radius:14px;border:0;
-      background:linear-gradient(90deg,var(--g1),var(--g2));color:#0a0d12;
-      font-weight:800;font-size:18px;letter-spacing:.04em;cursor:pointer;
-      box-shadow:0 10px 30px rgba(90,150,255,.25);
-      transition:transform .04s ease,filter .12s ease;
-      -webkit-tap-highlight-color:transparent;
-    }
-    .btn:active{transform:translateY(1px)}
-    .group-title{font-weight:900;font-size:22px;margin:4px 0 10px}
-
-    /* result rows */
-    .res-panel .who{color:var(--muted);margin:2px 0 12px}
-    .al-row{background:#0c1f32;border:1px solid var(--ring);border-radius:16px;padding:16px;
-      display:flex;align-items:center;gap:12px;margin:12px 0}
-    .dot{width:12px;height:12px;border-radius:50%}
-    .dot.o{background:#ffb21a}.dot.g{background:#34e27c}
-    .dot.p{background:#b485ff}.dot.pink{background:#ff7bb0}
-    .al-title{font-weight:800;font-size:20px;letter-spacing:.06em;flex:1;display:flex;align-items:center;gap:8px}
-    .pills{display:flex;gap:12px}
-    .pill{
-      min-width:92px;padding:10px 16px;border-radius:999px;border:1px solid var(--pill-bd);
-      background:var(--pill);color:var(--ng);font-weight:800;text-align:center;
-      letter-spacing:.05em;user-select:none;
-      transition:background .15s ease,color .15s ease,box-shadow .15s ease,border-color .15s ease;
-    }
-    .pill.on{background:linear-gradient(90deg,var(--g1),var(--g2));color:#0a0d12;border-color:transparent;
-      box-shadow:0 6px 22px rgba(145,200,255,.35)}
-    .pill.off{opacity:.55}
-
-    /* blur gallery */
-    .card-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
-    .blur-figure{margin:16px 0 0;position:relative;border-radius:18px;overflow:hidden}
-    .blur-figure img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#07121c}
-    figcaption{
-      position:absolute;left:12px;bottom:12px;padding:.35rem .6rem;border-radius:12px;
-      background:rgba(0,0,0,.55);backdrop-filter:saturate(1.4) blur(6px);
-      color:#dfe9f7;font-weight:700;font-size:14px
-    }
-
-    /* footer */
-    footer{margin:28px 0 0;text-align:center;color:var(--muted)}
-  </style>
+/* blur */
+.blur-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.blur-card{background:rgba(10,20,35,.65);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px}
+.img-wrap{position:relative;overflow:hidden;border-radius:14px}
+.blur-img{display:block;width:100%;border-radius:14px;background:#0b1a28}
+.badge{position:absolute;left:16px;bottom:16px;background:rgba(0,0,0,.55);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px}
+.footer{opacity:.6;text-align:center;padding:24px 0 10px;font-size:12px}
+.small{font-size:12px;color:var(--muted)}
+</style>
 </head>
 <body>
-  <main class="wrap">
+<main class="container">
+  <div class="panel">
+    <h1>Me-Moon AL Checker</h1>
+    <p class="sub">slug を入力して検索</p>
+    <div class="field">
+      <input id="slugInput" class="input" placeholder="slug を入力" autocomplete="off">
+      <button id="searchBtn" class="btn">検索</button>
+    </div>
 
-    <!-- ===== Header ===== -->
-    <header>
-      <div class="logo" aria-hidden="true" style="display:inline-block;border-radius:12px"></div>
-      <div>
-        <h1>Me-Moon AL Checker</h1>
-        <div class="sub">slug を入力して検索</div>
-      </div>
-    </header>
-
-    <!-- ===== Search Card ===== -->
-    <section class="card">
-      <div class="field">
-        <input id="slugInput" class="input" type="text" inputmode="search" autocomplete="off"
-               placeholder="slug を入力">
-        <button id="searchBtn" type="button" class="btn">検索</button>
-      </div>
+    <!-- 検索結果 -->
+    <section id="result" class="section result">
+      <h2>照会結果</h2>
+      <p id="resultNote" class="caption"></p>
+      <div id="cards"></div>
     </section>
 
-    <!-- ===== Result ===== -->
-    <section id="resultCard" class="card res-panel">
-      <div class="group-title">照会結果</div>
-      <div class="who" id="resultWho">未検索です。</div>
-
-      <!-- 4カテゴリ分の表示。JSが .on / .off を切り替える -->
-      <div class="al-row" data-key="charge">
-        <span class="dot o" aria-hidden="true"></span>
-        <div class="al-title">チャージ</div>
-        <div class="pills">
-          <div id="r-charge-1" class="pill off" aria-label="チャージ AL①">AL①</div>
-          <div id="r-charge-2" class="pill off" aria-label="チャージ AL②">AL②</div>
+    <!-- ブレ撮り -->
+    <section class="section">
+      <div class="blur-head">
+        <h2>みんなのブレ撮り</h2>
+        <button id="refreshBlur" class="btn" style="height:36px;font-size:14px;padding:0 16px">更新</button>
+      </div>
+      <div class="blur-card">
+        <div class="img-wrap">
+          <img id="blurImg" class="blur-img" alt="ブレ撮り">
+          <span id="blurCap" class="badge"></span>
         </div>
       </div>
-
-      <div class="al-row" data-key="nft">
-        <span class="dot g" aria-hidden="true"></span>
-        <div class="al-title">NFTコラボ</div>
-        <div class="pills">
-          <div id="r-nft-1" class="pill off" aria-label="NFTコラボ AL①">AL①</div>
-          <div id="r-nft-2" class="pill off" aria-label="NFTコラボ AL②">AL②</div>
-        </div>
-      </div>
-
-      <div class="al-row" data-key="guild">
-        <span class="dot p" aria-hidden="true"></span>
-        <div class="al-title">ギルドミッション</div>
-        <div class="pills">
-          <div id="r-guild-1" class="pill off" aria-label="ギルドミッション AL①">AL①</div>
-          <div id="r-guild-2" class="pill off" aria-label="ギルドミッション AL②">AL②</div>
-        </div>
-      </div>
-
-      <div class="al-row" data-key="greet">
-        <span class="dot pink" aria-hidden="true"></span>
-        <div class="al-title">挨拶タップ</div>
-        <div class="pills">
-          <div id="r-greet-1" class="pill off" aria-label="挨拶タップ AL①">AL①</div>
-          <div id="r-greet-2" class="pill off" aria-label="挨拶タップ AL②">AL②</div>
-        </div>
-      </div>
+      <p class="small">毎回ランダムに1枚表示。</p>
     </section>
+  </div>
+  <div class="footer">© Me-Moon</div>
+</main>
 
-    <!-- ===== AL 種類（固定の見本。JSとは無関係） ===== -->
-    <section class="card">
-      <div class="group-title">AL の種類</div>
+<script>
+(() => {
+  "use strict";
 
-      <div class="al-row">
-        <span class="dot o" aria-hidden="true"></span>
-        <div class="al-title">チャージ</div>
-        <div class="pills"><div class="pill">AL①</div><div class="pill">AL②</div></div>
-      </div>
+  /* ===== Config ===== */
+  const FILE_ID = "1-2oS--u1jf0fm-m9N_UDF5-aN-oLg_-wyqEpMSdcvcU";
+  const GROUPS = [
+    { key:"charge", label:"チャージ",           dot:"o", a1:"チャージAL①",           a2:"チャージAL②" },
+    { key:"nft",    label:"NFTコラボ",         dot:"g", a1:"NFTコラボAL①",         a2:"NFTコラボAL②" },
+    { key:"guild",  label:"ギルドミッション",   dot:"p", a1:"ギルドミッションAL①",   a2:"ギルドミッションAL②" },
+    { key:"hello",  label:"挨拶タップ",         dot:"r", a1:"挨拶タップAL①",         a2:"挨拶タップAL②" },
+  ];
 
-      <div class="al-row">
-        <span class="dot g" aria-hidden="true"></span>
-        <div class="al-title">NFTコラボ</div>
-        <div class="pills"><div class="pill">AL①</div><div class="pill">AL②</div></div>
-      </div>
+  /* ===== DOM ===== */
+  const $ = (s)=>document.querySelector(s);
+  const input   = $("#slugInput");
+  const btn     = $("#searchBtn");
+  const result  = $("#result");
+  const note    = $("#resultNote");
+  const cardsEl = $("#cards");
 
-      <div class="al-row">
-        <span class="dot p" aria-hidden="true"></span>
-        <div class="al-title">ギルドミッション</div>
-        <div class="pills"><div class="pill">AL①</div><div class="pill">AL②</div></div>
-      </div>
+  /* ===== Data ===== */
+  const alSets = new Map(); // sheetName -> Set(slug)
 
-      <div class="al-row">
-        <span class="dot pink" aria-hidden="true"></span>
-        <div class="al-title">挨拶タップ</div>
-        <div class="pills"><div class="pill">AL①</div><div class="pill">AL②</div></div>
-      </div>
-    </section>
+  const norm = (s="") =>
+    s.normalize("NFKC").trim().toLowerCase().replace(/^@/,"").replace(/\s+/g,"_");
 
-    <!-- ===== みんなのブレ撮り ===== -->
-    <section id="blurs" class="card">
-      <div class="card-head">
-        <h2 class="group-title" style="margin:0">みんなのブレ撮り</h2>
-        <button id="blurRefresh" type="button" class="btn" style="width:auto;padding:10px 16px;font-size:16px">更新</button>
-      </div>
-      <figure class="blur-figure">
-        <img id="blurImg" alt="ブレ撮り" loading="lazy" decoding="async">
-        <figcaption id="blurCap"></figcaption>
-      </figure>
-    </section>
+  async function fetchCSV(sheet){
+    const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
+    const res = await fetch(url,{cache:"no-store"});
+    if(!res.ok) throw new Error("fetch failed: "+sheet);
+    const text = await res.text();
+    const set = new Set();
+    text.split(/\r?\n/).forEach((line,i)=>{
+      if(!line) return;
+      const slug = line.split(",")[0];             // 1列目を採用
+      if(i===0 && /me-moon/i.test(slug)) return;   // ヘッダ避け
+      const n = norm(slug);
+      if(n) set.add(n);
+    });
+    return set;
+  }
 
-    <footer>© Me-Moon</footer>
-  </main>
+  async function loadAll(){
+    const names = [];
+    GROUPS.forEach(g=>names.push(g.a1,g.a2));
+    await Promise.all(names.map(async n=>{
+      if(!alSets.has(n)) alSets.set(n, await fetchCSV(n));
+    }));
+  }
 
-  <!-- 既存のロジック -->
-  <script src="app.js"></script>
+  function chip(label,on){
+    const d = document.createElement("div");
+    d.className = "chip"+(on?" on":"");
+    d.textContent = label;
+    return d;
+  }
+
+  function makeCard(g, slug){
+    const own1 = alSets.get(g.a1)?.has(slug);
+    const own2 = alSets.get(g.a2)?.has(slug);
+    const card = document.createElement("div");
+    card.className = "card";
+    const row  = document.createElement("div"); row.className = "row";
+    const ttl  = document.createElement("div"); ttl.className = "title";
+    const dot  = document.createElement("span"); dot.className = "dot "+g.dot;
+    const name = document.createElement("span"); name.textContent = g.label;
+    ttl.append(dot,name);
+    const chips = document.createElement("div"); chips.className = "chips";
+    chips.append(chip("AL①",!!own1), chip("AL②",!!own2));
+    row.append(ttl,chips);
+    card.append(row);
+    return card;
+  }
+
+  async function doSearch(){
+    const raw = input.value;
+    const slug = norm(raw);
+    if(!slug){ result.classList.remove("show"); return; }
+    btn.disabled = true;
+    try{
+      await loadAll();
+      cardsEl.innerHTML = "";
+      GROUPS.forEach(g=>cardsEl.appendChild(makeCard(g, slug)));
+      note.textContent = slug;     // 「該当/非該当」はチップのON/OFFで明示
+      result.classList.add("show");
+    }catch(err){
+      console.error(err);
+      note.textContent = "取得エラー。時間をおいて再実行してください。";
+      result.classList.add("show");
+    }finally{
+      btn.disabled = false;
+    }
+  }
+  btn.addEventListener("click", doSearch);
+  input.addEventListener("keydown", e=>{ if(e.key==="Enter") doSearch(); });
+
+  /* ===== ブレ撮り ===== */
+  const img  = $("#blurImg");
+  const cap  = $("#blurCap");
+  const btnR = $("#refreshBlur");
+
+  function parseCaption(file){
+    const base = file.replace(/\.[^.]+$/,"");
+    const m = base.match(/^(\d{4}-\d{2}-\d{2})_(.+?)_/);
+    if(m) return {date:m[1], name:m[2]};
+    // フォールバック（末尾を名前扱い）
+    return {date:"", name:base};
+  }
+
+  async function loadRandom(){
+    try{
+      const res = await fetch("./blurs/manifest.json",{cache:"no-store"});
+      if(!res.ok) return;
+      const man = await res.json();
+      const arr = man.images||[];
+      if(!arr.length) return;
+      const pick = arr[Math.floor(Math.random()*arr.length)];
+      img.src = "./blurs/"+pick.file;
+      const meta = parseCaption(pick.file);
+      cap.textContent = (pick.label||meta.name) + (meta.date?` / ${meta.date}`:"");
+    }catch(e){ console.error(e); }
+  }
+  btnR.addEventListener("click", loadRandom);
+  loadRandom();
+})();
+</script>
 </body>
 </html>
