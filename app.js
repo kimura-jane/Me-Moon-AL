@@ -1,214 +1,79 @@
-"use strict";
+/* ===== ブレ撮り：1枚ランダム表示（重複回避付き） ===== */
+(() => {
+  const BLUR_DIR = 'blurs';
+  const MANIFEST_PATH = `${BLUR_DIR}/manifest.json`;
+  const POOL_KEY = 'blur_pool_v1';
+  const BUTTON_IDS = ['blurRefresh', 'refreshBlursBtn', 'refreshBlur', 'refreshBtn']; // 手元のIDが違えばここに追加
+  let manifestCache = null;
 
-/* ========= CONFIG ========= */
-const FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU";
-const SHEETS = [
-  { label: "チャージAL①",         sheet: "チャージAL①" },
-  { label: "チャージAL②",         sheet: "チャージAL②" },
-  { label: "NFTコラボAL①",        sheet: "NFTコラボAL①" },
-  { label: "NFTコラボAL②",        sheet: "NFTコラボAL②" },
-  { label: "ギルドミッションAL①", sheet: "ギルドミッションAL①" },
-  { label: "ギルドミッションAL②", sheet: "ギルドミッションAL②" },
-  { label: "挨拶タップAL①",       sheet: "挨拶タップAL①" },
-  { label: "挨拶タップAL②",       sheet: "挨拶タップAL②" }
-];
-const ORDER = SHEETS.map(s=>s.label);
-const GVIZ = name => `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;
-const DEBUG = new URL(location.href).searchParams.get("debug")==="1";
-
-/* ---- みんなのブレ撮り ---- */
-const SNAP = {
-  manifest: "blurs/manifest.json", // ルート直下に /blurs/ 配置
-  count: 6                          // 一度に出す枚数
-};
-/* ========================= */
-
-const bySlug = new Map();
-let LOADED=false, pendingQuery=null;
-const $ = q=>document.querySelector(q);
-const statusEl = $("#status") || (()=>{const d=document.createElement("div");d.id="status";d.style.cssText="margin-top:8px;color:#fca5a5;font-size:12px;";($(".card")||document.body).prepend(d);return d;})();
-
-const norm = s => (s||"").replace(/\u200B/g,"").normalize("NFKC").trim().toLowerCase().replace(/^@/,"");
-
-/* ===== CSV ===== */
-function parseCSV(text){
-  if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
-  const rows=[]; let i=0, f="", row=[], q=false;
-  const pushF=()=>{row.push(f);f="";}, pushR=()=>{rows.push(row);row=[];};
-  while(i<text.length){
-    const c=text[i];
-    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i+=2;continue;} q=false;i++;continue; } f+=c;i++;continue; }
-    if(c==='"'){q=true;i++;continue;}
-    if(c===','){pushF();i++;continue;}
-    if(c==='\r'){i++;continue;}
-    if(c==='\n'){pushF();pushR();i++;continue;}
-    f+=c;i++;
-  } pushF();pushR();
-  return rows.filter(r=>r.length && r.join("").trim()!=="");
-}
-function rowsToSlugs(rows){
-  if(!rows.length) return [];
-  const head = rows[0].map(s=>(s||"").trim().toLowerCase());
-  const hasHeader = head.includes("slug");
-  const idx = hasHeader ? head.indexOf("slug") : 0;
-  const start = hasHeader ? 1 : 0;
-  const out=[];
-  for(let r=start;r<rows.length;r++){
-    const s=(rows[r][idx]||"").trim();
-    if(s && s.toLowerCase()!=="slug") out.push(s);
+  async function loadManifest() {
+    if (manifestCache) return manifestCache;
+    const res = await fetch(MANIFEST_PATH, { cache: 'no-store' });
+    if (!res.ok) throw new Error('manifest.json を読み込めませんでした');
+    manifestCache = await res.json();
+    return manifestCache;
   }
-  return out;
-}
-function add(slug,label){
-  const k=norm(slug); if(!k) return;
-  const cur=bySlug.get(k)||new Set(); cur.add(label); bySlug.set(k,cur);
-}
 
-/* ===== fetch + retry ===== */
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function fetchWithTimeout(url,ms){
-  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),ms);
-  try{ return await fetch(url,{cache:"no-store",signal:ctl.signal}); } finally{ clearTimeout(t); }
-}
-async function retryFetch(url, timeouts=[6000,8000,10000]){
-  let err;
-  for(let i=0;i<timeouts.length;i++){
-    try{
-      const r=await fetchWithTimeout(url,timeouts[i]);
-      if(!r.ok){ if(r.status>=500||r.status===429||r.status===403) throw new Error("HTTP "+r.status); return r; }
-      return r;
-    }catch(e){ err=e; await sleep(400*(i+1)); }
-  } throw err;
-}
+  // セッション内で重複しないようにシャッフル済みプールから1件取り出す
+  function nextIndex(n) {
+    let pool;
+    try { pool = JSON.parse(sessionStorage.getItem(POOL_KEY) || '[]'); } catch { pool = []; }
+    if (!Array.isArray(pool) || pool.length === 0 || pool.some(i => i >= n)) {
+      // 新しくシャッフル
+      pool = [...Array(n).keys()];
+      for (let i = n - 1; i > 0; i--) {
+        const rand = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+        [pool[i], pool[rand]] = [pool[rand], pool[i]];
+      }
+    }
+    const idx = pool.pop();
+    sessionStorage.setItem(POOL_KEY, JSON.stringify(pool));
+    return idx;
+  }
 
-/* ===== load all sheets ===== */
-async function fetchSheet(label, sheet){
-  const r = await retryFetch(GVIZ(sheet)+"&_t="+Date.now());
-  if(!r.ok) throw new Error(`${label} 読込失敗 HTTP ${r.status}`);
-  const text = await r.text();
-  rowsToSlugs(parseCSV(text)).forEach(s=>add(s,label));
-}
-async function loadAll(){
-  const failed=[];
-  for(let i=0;i<SHEETS.length;i++){
-    const s=SHEETS[i];
-    statusEl.textContent=`同期中… ${i+1}/${SHEETS.length} 「${s.label}」`;
-    try{ await fetchSheet(s.label,s.sheet); }catch(e){ console.error(e); failed.push(s.label); }
-  }
-  LOADED=true;
-  if(failed.length){ statusEl.textContent=`読込失敗: ${failed.join(", ")}（共有設定とシート名を確認）`; }
-  else{ statusEl.textContent=""; statusEl.style.display="none"; }
-  if(pendingQuery){ const q=pendingQuery; pendingQuery=null; show(q, lookup(q)); }
+  function renderOne(item) {
+    const wrap = document.getElementById('blurGrid');
+    if (!wrap) return;
+    wrap.innerHTML = ''; // 1枚だけにする
 
-  if(DEBUG){
-    const box=document.createElement("div"); box.className="result"; box.style.marginTop="12px";
-    const counts=SHEETS.map(s=>{let c=0; bySlug.forEach(set=>{ if(set.has(s.label)) c++; }); return `${s.label}: ${c}件`;}).join("\n");
-    box.innerHTML=`<strong>DEBUG</strong><pre>${counts}</pre>`;
-    ($(".card")||document.body).appendChild(box);
-  }
-}
+    const fig = document.createElement('figure');
+    fig.className = 'blur-card';
 
-/* ===== search / render ===== */
-function lookup(q){
-  const set = bySlug.get(norm(q)) || new Set();
-  return ORDER.filter(l=>set.has(l));
-}
-function catFromTitle(title){
-  if(title.startsWith("チャージ")) return "charge";
-  if(title.startsWith("NFT")) return "nft";
-  if(title.startsWith("ギルド")) return "guild";
-  return "greet";
-}
-const TITLE_ORDER = ["チャージ","NFTコラボ","ギルドミッション","挨拶タップ"];
-function groupLabels(labels){
-  const map=new Map(); // title -> {cat, chips:Set}
-  for(const l of labels){
-    const m=l.match(/^(.*?)(AL[①②])$/);
-    if(!m) continue;
-    const title=m[1], chip=m[2];
-    const e=map.get(title)||{cat:catFromTitle(title),chips:new Set()};
-    e.chips.add(chip); map.set(title,e);
-  }
-  return map;
-}
-function renderGroups(q, labels){
-  const groups=groupLabels(labels);
-  const titles=TITLE_ORDER.filter(t=>groups.has(t));
-  if(!titles.length){
-    return `<h3>照会: <code>${q}</code></h3><div class="groups"><div class="chip">該当なし。slugを確認。</div></div>`;
-  }
-  const html=titles.map(t=>{
-    const {cat,chips}=groups.get(t);
-    const chipsHtml=[...chips].sort().map(c=>`<span class="chip">${c}</span>`).join("");
-    return `<div class="group">
-      <div class="group-head"><span class="i ${cat}"></span><span class="group-title">${t}</span></div>
-      <div class="chips">${chipsHtml}</div>
-    </div>`;
-  }).join("");
-  return `<h3>照会: <code>${q}</code></h3><div class="groups">${html}</div>`;
-}
-function ensureOut(){
-  return $("#out") || (()=>{const d=document.createElement("div");d.id="out";d.className="result";($(".card")||document.body).appendChild(d);return d;})();
-}
-function show(q, arr){
-  const out=ensureOut(); out.innerHTML=renderGroups(q,arr); out.style.display="block";
-}
-function go(){
-  const inp=$("#q"); const q=(inp?inp.value:"").trim(); if(!q) return;
-  if(!LOADED){ pendingQuery=q; statusEl.textContent="同期中… 完了後に検索を自動実行する"; statusEl.style.display="block"; return; }
-  show(q, lookup(q));
-  const u=new URL(location.href); u.searchParams.set("q", q); history.replaceState(null,"",u.toString());
-}
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = `${item.author} – ${item.date}`;
+    img.src = `${BLUR_DIR}/${item.file}`;
+    fig.appendChild(img);
 
-/* ===== みんなのブレ撮り ===== */
-function shuffle(arr){
-  const a=arr.slice();
-  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];}
-  return a;
-}
-async function loadSnaps(){
-  const grid = $("#snaps-grid");
-  if(!grid) return;
-  try{
-    const res = await fetch(`${SNAP.manifest}?_=${Date.now()}`, {cache:"no-store"});
-    if(!res.ok) throw new Error("manifest fetch failed");
-    const data = await res.json();
-    const list = (data.images || data || []).map(x=>{
-      if(typeof x === "string") return { url:`blurs/${encodeURIComponent(x)}`, alt:"" };
-      if(x.url) return x;
-      if(x.file) return { url:`blurs/${encodeURIComponent(x.file)}`, alt:(x.alt||"") };
-      return null;
-    }).filter(Boolean);
-    renderSnaps(shuffle(list).slice(0, SNAP.count));
-    $("#shuffle")?.addEventListener("click", ()=>renderSnaps(shuffle(list).slice(0, SNAP.count)));
-  }catch(e){
-    console.error(e);
-    grid.innerHTML = `<div class="chip">manifest.json が見つからない。</div>`;
-  }
-}
-function renderSnaps(items){
-  const grid = $("#snaps-grid"); if(!grid) return;
-  grid.innerHTML = items.map(it=>{
-    const alt = it.alt ? `alt="${it.alt}"` : 'alt=""';
-    const cap = it.alt ? `<span class="snap-caption">${it.alt}</span>` : "";
-    return `<a class="snap-card" href="${it.url}" target="_blank" rel="noopener">
-      <img ${alt} src="${it.url}" loading="lazy" decoding="async">${cap}
-    </a>`;
-  }).join("");
-}
+    const cap = document.createElement('figcaption');
+    cap.className = 'blur-cap';
+    cap.textContent = `${item.author} – ${item.date}`;
+    fig.appendChild(cap);
 
-/* ===== boot ===== */
-document.addEventListener("DOMContentLoaded", async ()=>{
-  $("#go")?.addEventListener("click", go);
-  const inp=$("#q");
-  if(inp){
-    inp.addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
-    inp.setAttribute("autocapitalize","none");
-    inp.setAttribute("autocorrect","off");
-    inp.setAttribute("spellcheck","false");
+    wrap.appendChild(fig);
   }
-  await loadAll();
-  await loadSnaps();               // ← 追加
-  const init=new URL(location.href).searchParams.get("q");
-  if(init && inp){ inp.value=init; go(); }
-});
+
+  async function showRandomBlur() {
+    const wrap = document.getElementById('blurGrid');
+    try {
+      const data = await loadManifest();
+      const list = Array.isArray(data.images) ? data.images : [];
+      if (!list.length) {
+        if (wrap) wrap.innerHTML = `<div class="note">画像がありません。</div>`;
+        return;
+      }
+      const idx = nextIndex(list.length);
+      renderOne(list[idx]);
+    } catch (e) {
+      if (wrap) wrap.innerHTML = `<div class="note">読み込み失敗：${e.message}</div>`;
+    }
+  }
+
+  // 初期化：読み込み時 & 更新ボタン
+  document.addEventListener('DOMContentLoaded', showRandomBlur);
+  BUTTON_IDS.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', showRandomBlur);
+  });
+})();
