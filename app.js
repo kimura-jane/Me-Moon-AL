@@ -1,18 +1,21 @@
 "use strict";
 
 /* ========= CONFIG ========= */
+// てめーのスプシID（そのまま）
 const FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU";
+
+// 新しいシート名＆表示ラベル（完全一致）
 const SHEETS = [
-  { label: "チャージ確定",   sheet: "チャージ確定" },
-  { label: "チャージ早押し", sheet: "チャージ早押し" },
-  { label: "企画確定",       sheet: "企画確定" },
-  { label: "企画早押し",     sheet: "企画早押し" },
-  { label: "NFT確定",        sheet: "NFT確定" },
-  { label: "NFT早押し",      sheet: "NFT早押し" },
-  { label: "挨拶確定",       sheet: "挨拶確定" },
-  { label: "挨拶早押し②",    sheet: "挨拶早押し②" },
-  { label: "挨拶早押し①",    sheet: "挨拶早押し①" }
+  { label: "チャージAL①",       sheet: "チャージAL①" },
+  { label: "チャージAL②",       sheet: "チャージAL②" },
+  { label: "NFTコラボAL①",      sheet: "NFTコラボAL①" },
+  { label: "NFTコラボAL②",      sheet: "NFTコラボAL②" },
+  { label: "ギルドミッションAL①", sheet: "ギルドミッションAL①" },
+  { label: "ギルドミッションAL②", sheet: "ギルドミッションAL②" },
+  { label: "挨拶タップAL①",     sheet: "挨拶タップAL①" },
+  { label: "挨拶タップAL②",     sheet: "挨拶タップAL②" }
 ];
+
 const ORDER = SHEETS.map(s => s.label);
 const GVIZ = (name) =>
   `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;
@@ -36,8 +39,7 @@ function norm(s){
 
 /* ===== CSVパーサ（引用符/カンマ対応） ===== */
 function parseCSV(text){
-  // BOM除去
-  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // BOM除去
   const rows=[]; let i=0, field="", row=[], inQ=false;
   const pushF=()=>{row.push(field);field="";};
   const pushR=()=>{rows.push(row);row=[];};
@@ -78,9 +80,9 @@ function add(slug,label){
 
 /* ===== fetch: タイムアウト＋再試行 ===== */
 const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
-async function fetchWithTimeout(url, timeoutMs){
+async function fetchWithTimeout(url, ms){
   const ctl = new AbortController();
-  const t = setTimeout(()=>ctl.abort(), timeoutMs);
+  const t = setTimeout(()=>ctl.abort(), ms);
   try{ return await fetch(url, {cache:"no-store", signal:ctl.signal}); }
   finally{ clearTimeout(t); }
 }
@@ -90,15 +92,11 @@ async function retryFetch(url, timeouts=[6000,8000,10000]){
     try{
       const res = await fetchWithTimeout(url, timeouts[i]);
       if(!res.ok){
-        // 429/5xx/403 は再試行、それ以外はそのまま返す
         if(res.status>=500 || res.status===429 || res.status===403) throw new Error("HTTP "+res.status);
         return res;
       }
       return res;
-    }catch(e){
-      lastErr = e;
-      await sleep(400*(i+1));
-    }
+    }catch(e){ lastErr = e; await sleep(400*(i+1)); }
   }
   throw lastErr;
 }
@@ -127,8 +125,8 @@ async function loadAll(){
     statusEl.textContent = "";
     statusEl.style.display = "none";
   }
-  // 読込完了後、未処理の検索を自動再実行
   if(pendingQuery) { const q=pendingQuery; pendingQuery=null; show(q, lookup(q)); }
+
   if(DEBUG){
     const box=document.createElement("div"); box.className="result"; box.style.marginTop="12px";
     const counts=SHEETS.map(s=>{let c=0; bySlug.forEach(set=>{ if(set.has(s.label)) c++; }); return `${s.label}: ${c}件`;}).join("\n");
@@ -142,7 +140,12 @@ function lookup(q){
   const set = bySlug.get(norm(q)) || new Set();
   return ORDER.filter(l=>set.has(l));
 }
-function cat(l){ if(l.startsWith("チャージ"))return"charge"; if(l.startsWith("企画"))return"plan"; if(l.startsWith("NFT"))return"nft"; return"greet"; }
+function cat(l){
+  if(l.startsWith("チャージ")) return "charge";
+  if(l.startsWith("NFT"))      return "nft";
+  if(l.startsWith("ギルド"))    return "guild";
+  return "greet"; // 挨拶タップ
+}
 function tag(l){ return `<span class="tag"><span class="i ${cat(l)}"></span>${l}</span>`; }
 function ensureOut(){
   return $("#out") || (()=>{const d=document.createElement("div");d.id="out";d.className="result";($(".card")||document.body).appendChild(d);return d;})();
@@ -156,12 +159,7 @@ function show(q, arr){
 }
 function go(){
   const inp=$("#q"); const q=(inp?inp.value:"").trim(); if(!q) return;
-  if(!LOADED){ // ロード前に検索したら完了後に自動再実行
-    pendingQuery = q;
-    statusEl.textContent = "同期中… 完了後に検索を自動実行する";
-    statusEl.style.display = "block";
-    return;
-  }
+  if(!LOADED){ pendingQuery = q; statusEl.textContent = "同期中… 完了後に検索を自動実行する"; statusEl.style.display = "block"; return; }
   show(q, lookup(q));
   const u=new URL(location.href); u.searchParams.set("q", q); history.replaceState(null,"",u.toString());
 }
