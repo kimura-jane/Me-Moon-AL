@@ -1,56 +1,103 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Me-Moon AL Checker</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script src="app.js" defer></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Me-Moon AL Checker</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --fg:#e8eef6; --muted:#9fb3c6; --chipOn:#e7d0d9; --chipOff:#6a6f78; }
+  *{box-sizing:border-box} body{margin:0;background:#0e2132;color:var(--fg);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto}
+  .wrap{max-width:900px;margin:32px auto;padding:0 16px}
+  h1{font-size:28px;margin:0 0 8px} .sub{color:var(--muted);margin-bottom:20px}
+  .card{background:#0c1a28;border-radius:18px;padding:18px;margin:18px 0;box-shadow:0 6px 24px rgba(0,0,0,.18), inset 0 0 0 1px rgba(255,255,255,.05)}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  input[type=text]{width:100%;padding:16px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:#0a1622;color:var(--fg);font-size:16px}
+  button.btn{width:100%;margin-top:12px;border:0;border-radius:14px;padding:14px 12px;color:#08131e;
+    background:linear-gradient(90deg,#a9e7ff,#bfa6ff);font-weight:700;font-size:16px}
+  h2{font-size:20px;margin:8px 0 10px}
+  .pill{min-width:84px;display:inline-flex;justify-content:center;align-items:center;padding:10px 14px;border-radius:24px;font-weight:700}
+  .pill.on{background:rgba(255,255,255,.12);color:var(--chipOn);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+  .pill.off{background:rgba(255,255,255,.04);color:var(--chipOff);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);opacity:.75}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .dot.c{background:#ffa81f}.dot.n{background:#42e492}.dot.g{background:#b88cff}.dot.h{background:#ff7fb5}
+  .result-note{color:var(--muted);font-size:14px}
+  /* ---- blur caption effect ---- */
+  .caption{position:absolute;left:14px;bottom:14px;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.55);font-size:13px}
+  .glitch.active{animation:glitch 0.6s infinite alternate;filter:blur(1px)}
+  @keyframes glitch{
+    0%{text-shadow:1px 0 rgba(255,70,70,.9), -1px 0 rgba(70,160,255,.9)}
+    50%{text-shadow:2px 0 rgba(255,70,70,.8), -2px 0 rgba(70,160,255,.8)}
+    100%{text-shadow:1px 0 rgba(255,70,70,.9), -1px 0 rgba(70,160,255,.9)}
+  }
+  .frame{position:relative;border-radius:22px;overflow:hidden;background:#09121c;min-height:260px}
+  .frame img{display:block;width:100%;height:auto}
+  footer{color:var(--muted);text-align:center;margin:26px 0;font-size:13px}
+</style>
 </head>
 <body>
-  <header class="hero">
-    <div class="brand">
-      <div class="logo"></div>
-      <div class="titlewrap">
-        <h1 class="title">Me-Moon AL Checker</h1>
-        <p class="subtitle">slug を入力して検索</p>
+  <div class="wrap">
+    <h1>Me-Moon AL Checker</h1>
+    <p class="sub">slug を入力して検索</p>
+
+    <section class="card">
+      <input id="slug" type="text" inputmode="latin" autocomplete="off" placeholder="slug を入力">
+      <button id="btnSearch" class="btn">検索</button>
+    </section>
+
+    <section class="card" id="resultCard" aria-live="polite">
+      <h2>照会結果</h2>
+      <p id="who" class="result-note">未検索です。</p>
+
+      <div class="card" id="grp-charge">
+        <div class="row"><span class="dot c"></span><h3 style="margin:0 0 0 8px">チャージ</h3></div>
+        <div class="row" style="margin-top:10px">
+          <span id="chip-charge-1" class="pill off">AL①</span>
+          <span id="chip-charge-2" class="pill off">AL②</span>
+        </div>
       </div>
-    </div>
-  </header>
 
-  <main class="container">
-    <!-- 検索 -->
-    <section class="card">
-      <form id="searchForm" autocomplete="off">
-        <input id="slugInput" class="input" placeholder="slug を入力" inputmode="latin" />
-        <button id="searchBtn" class="btn-grad" type="submit">検索</button>
-      </form>
-    </section>
-
-    <!-- 照会結果 -->
-    <section id="resultWrap" class="card">
-      <h2 class="h2">照会結果</h2>
-      <div id="resultBox" class="result-box muted">未検索です。</div>
-      <div id="resultList" class="result-list"></div>
-    </section>
-
-    <!-- カタログ（固定表示） -->
-    <section class="card">
-      <h2 class="h2">AL の種類</h2>
-      <div id="catalog" class="catalog"></div>
-    </section>
-
-    <!-- みんなのブレ撮り -->
-    <section class="card">
-      <div class="card-head">
-        <h2 class="h2">みんなのブレ撮り</h2>
-        <button id="blurRefresh" class="btn-chip" type="button">更新</button>
+      <div class="card" id="grp-nft">
+        <div class="row"><span class="dot n"></span><h3 style="margin:0 0 0 8px">NFTコラボ</h3></div>
+        <div class="row" style="margin-top:10px">
+          <span id="chip-nft-1" class="pill off">AL①</span>
+          <span id="chip-nft-2" class="pill off">AL②</span>
+        </div>
       </div>
-      <p class="note">毎回ランダムに1枚表示。キャプションをタップで“文字ブレ”。</p>
-      <figure id="blurCard" class="blur-card"></figure>
+
+      <div class="card" id="grp-guild">
+        <div class="row"><span class="dot g"></span><h3 style="margin:0 0 0 8px">ギルドミッション</h3></div>
+        <div class="row" style="margin-top:10px">
+          <span id="chip-guild-1" class="pill off">AL①</span>
+          <span id="chip-guild-2" class="pill off">AL②</span>
+        </div>
+      </div>
+
+      <div class="card" id="grp-hello">
+        <div class="row"><span class="dot h"></span><h3 style="margin:0 0 0 8px">挨拶タップ</h3></div>
+        <div class="row" style="margin-top:10px">
+          <span id="chip-hello-1" class="pill off">AL①</span>
+          <span id="chip-hello-2" class="pill off">AL②</span>
+        </div>
+      </div>
     </section>
 
-    <footer class="foot">© Me-Moon</footer>
-  </main>
+    <section class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">みんなのブレ撮り</h2>
+        <button id="btnRefresh" class="btn" style="width:auto;padding:10px 16px">更新</button>
+      </div>
+      <p class="result-note" id="blurNote">毎回ランダムに1枚表示。キャプションをタップで“文字ブレ”。</p>
+      <div class="frame" id="blurFrame" hidden>
+        <img id="blurImg" alt="">
+        <span id="blurCap" class="caption glitch"></span>
+      </div>
+      <p class="result-note" id="blurErr" hidden>manifest.json が見つからない。</p>
+    </section>
+
+    <footer>© Me-Moon</footer>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
