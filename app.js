@@ -1,209 +1,171 @@
-/* app.js — gviz JSONP 版（CORS回避） */
+/* app.js — JSONP & 初期表示 + “当たり”は光る */
 (() => {
   "use strict";
 
-  // ====== Config ======
+  // ===== Config =====
   const FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU";
   const SHEETS = [
-    { group: "チャージ", idx: 0, sheet: "チャージAL①" },
-    { group: "チャージ", idx: 1, sheet: "チャージAL②" },
-    { group: "NFTコラボ", idx: 0, sheet: "NFTコラボAL①" },
-    { group: "NFTコラボ", idx: 1, sheet: "NFTコラボAL②" },
-    { group: "ギルドミッション", idx: 0, sheet: "ギルドミッションAL①" },
-    { group: "ギルドミッション", idx: 1, sheet: "ギルドミッションAL②" },
-    { group: "挨拶タップ", idx: 0, sheet: "挨拶タップAL①" },
-    { group: "挨拶タップ", idx: 1, sheet: "挨拶タップAL②" },
+    { g: "チャージ", i: 0, n: "チャージAL①" },
+    { g: "チャージ", i: 1, n: "チャージAL②" },
+    { g: "NFTコラボ", i: 0, n: "NFTコラボAL①" },
+    { g: "NFTコラボ", i: 1, n: "NFTコラボAL②" },
+    { g: "ギルドミッション", i: 0, n: "ギルドミッションAL①" },
+    { g: "ギルドミッション", i: 1, n: "ギルドミッションAL②" },
+    { g: "挨拶タップ", i: 0, n: "挨拶タップAL①" },
+    { g: "挨拶タップ", i: 1, n: "挨拶タップAL②" },
   ];
-  const CACHE_TTL_MS = 1000 * 60 * 3; // 3分
+  const CACHE_TTL = 1000 * 60 * 3; // 3分
 
-  // ====== DOM ======
+  // ===== DOM =====
   const $ = (s, r = document) => r.querySelector(s);
   const form = $("#searchForm") || document;
   const input = $("#slugInput") || $("input[name='slug']") || $("input");
-  const searchBtn =
-    $("#searchBtn") ||
-    (form instanceof HTMLFormElement
-      ? form.querySelector("button[type='submit']")
-      : $("button[data-role='search-btn']"));
-  const resultWrap = $("#resultWrap") || $("#resultList") || $("#results");
-  const resultTitle = $("#resultTitle") || $("[data-role='result-title']");
-  const resultMsg = $("#resultMsg") || $("[data-role='result-msg']");
+  const btn   = $("#searchBtn") || $("button[type='submit']") || $("button");
+  const box   = $("#resultWrap") || $("#results") || $("#resultList");
+  const title = $("#resultTitle") || $("[data-role='result-title']");
+  const msgEl = $("#resultMsg") || $("[data-role='result-msg']");
 
-  // ====== utils ======
+  // ===== utils =====
   const norm = (s) =>
-    String(s || "")
-      .normalize("NFKC")
-      .trim()
-      .toLowerCase()
-      .replace(/^@/, "");
+    String(s || "").normalize("NFKC").trim().toLowerCase().replace(/^@/, "");
 
-  const jsonpURL = (sheet, cbName) =>
+  const jsonpURL = (sheet, cb) =>
     `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq` +
-    `?tqx=out:json;responseHandler:${cbName}` +
-    `&sheet=${encodeURIComponent(sheet)}` +
-    `&tq=${encodeURIComponent("select A")}`;
+    `?tqx=out:json;responseHandler:${cb}` +
+    `&sheet=${encodeURIComponent(sheet)}&tq=${encodeURIComponent("select A")}`;
 
-  function jsonpFetch(sheet, timeoutMs = 8000) {
+  function jsonp(sheet, timeout = 8000) {
     return new Promise((resolve, reject) => {
-      const cb = `__gviz_cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      const url = jsonpURL(sheet, cb);
-      const script = document.createElement("script");
+      const cb = `__cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const s = document.createElement("script");
       let done = false;
-      const cleanup = () => {
-        if (script.parentNode) script.parentNode.removeChild(script);
-        try { delete window[cb]; } catch (_) { window[cb] = undefined; }
-      };
-      const timer = setTimeout(() => {
-        if (done) return;
-        done = true; cleanup();
-        reject(new Error("timeout"));
-      }, timeoutMs);
+      const clean = () => { s.remove(); try { delete window[cb]; } catch {} };
+      const to = setTimeout(() => { if (!done){ done=true; clean(); reject(new Error("timeout")); }}, timeout);
 
       window[cb] = (data) => {
         if (done) return;
-        done = true;
-        clearTimeout(timer);
-        cleanup();
+        done = true; clearTimeout(to); clean();
         try {
-          const rows = (data && data.table && data.table.rows) || [];
+          const rows = data?.table?.rows || [];
           const set = new Set();
-          for (const r of rows) {
-            const cell = r && r.c && r.c[0];
-            const v = (cell && (cell.v ?? cell.f)) ?? "";
+          rows.forEach(r => {
+            const c = r?.c?.[0];
+            const v = (c?.v ?? c?.f ?? "").toString();
             const n = norm(v);
             if (n) set.add(n);
-          }
+          });
           resolve(set);
-        } catch (e) {
-          reject(e);
-        }
+        } catch (e) { reject(e); }
       };
-
-      script.src = url;
-      script.onerror = () => {
-        if (done) return;
-        done = true; clearTimeout(timer); cleanup();
-        reject(new Error("script error"));
-      };
-      document.head.appendChild(script);
+      s.src = jsonpURL(sheet, cb);
+      s.onerror = () => { if (!done){ done=true; clearTimeout(to); clean(); reject(new Error("script error")); } };
+      document.head.appendChild(s);
     });
   }
 
-  // キャッシュ
-  const cache = new Map(); // sheetName => {t,set}
-  async function loadSheetSet(name) {
+  const cache = new Map(); // name -> {t,set}
+  async function loadSet(name) {
     const c = cache.get(name);
     const now = Date.now();
-    if (c && now - c.t < CACHE_TTL_MS) return c.set;
+    if (c && now - c.t < CACHE_TTL) return c.set;
 
-    // リトライ（指数バックオフ）
-    let delay = 300, lastErr;
+    let err, delay = 250;
     for (let i = 0; i < 4; i++) {
       try {
-        const set = await jsonpFetch(name);
+        const set = await jsonp(name);
         cache.set(name, { t: now, set });
         return set;
       } catch (e) {
-        lastErr = e;
-        await new Promise((r) => setTimeout(r, delay + Math.random() * 150));
-        delay *= 2;
+        err = e;
+        await new Promise(r => setTimeout(r, delay)); delay *= 2;
       }
     }
-    throw lastErr || new Error("load failed");
+    throw err || new Error("load failed");
   }
 
-  function setBusy(b) {
-    if (searchBtn) {
-      searchBtn.disabled = b;
-      searchBtn.classList.toggle("is-busy", b);
-    }
+  const dot = (g) =>
+    g === "チャージ" ? "c-orange" :
+    g === "NFTコラボ" ? "c-green"  :
+    g === "ギルドミッション" ? "c-purple" :
+    g === "挨拶タップ" ? "c-pink" : "c-gray";
+
+  function renderBlank() {
+    if (!box) return;
+    const groups = [...new Set(SHEETS.map(s => s.g))];
+    box.innerHTML = groups.map(g => `
+      <div class="al-card">
+        <div class="al-head"><span class="al-dot ${dot(g)}"></span><span class="al-ttl">${g}</span></div>
+        <div class="al-pills">
+          <span class="al-pill off">AL①</span>
+          <span class="al-pill off">AL②</span>
+        </div>
+      </div>
+    `).join("");
+    if (msgEl) { msgEl.textContent = ""; msgEl.style.display = "none"; }
+    if (title) title.textContent = "";
   }
-  function showMsg(text) {
-    if (resultMsg) {
-      resultMsg.textContent = text || "";
-      resultMsg.style.display = text ? "" : "none";
-    }
-  }
-  function dotClass(group) {
-    switch (group) {
-      case "チャージ": return "c-orange";
-      case "NFTコラボ": return "c-green";
-      case "ギルドミッション": return "c-purple";
-      case "挨拶タップ": return "c-pink";
-      default: return "c-gray";
-    }
-  }
-  function renderResults(slug, map) {
-    if (resultTitle) resultTitle.textContent = slug || "";
-    showMsg("");
-    if (!resultWrap) return;
-    const blocks = [];
-    for (const [group, pair] of map) {
+
+  function render(slug, map) {
+    if (!box) return;
+    if (title) title.textContent = slug || "";
+    if (msgEl) { msgEl.textContent = ""; msgEl.style.display = "none"; }
+
+    box.innerHTML = [...map.entries()].map(([g, pair]) => {
       const [a1, a2] = pair;
-      blocks.push(`
+      return `
         <div class="al-card">
-          <div class="al-head">
-            <span class="al-dot ${dotClass(group)}"></span>
-            <span class="al-ttl">${group}</span>
-          </div>
+          <div class="al-head"><span class="al-dot ${dot(g)}"></span><span class="al-ttl">${g}</span></div>
           <div class="al-pills">
             <span class="al-pill ${a1 ? "on" : "off"}">AL①${a1 ? "✓" : ""}</span>
             <span class="al-pill ${a2 ? "on" : "off"}">AL②${a2 ? "✓" : ""}</span>
           </div>
         </div>
-      `);
-    }
-    resultWrap.innerHTML = blocks.join("");
+      `;
+    }).join("");
   }
 
-  // ====== search ======
+  function showErr(t){ if(msgEl){ msgEl.textContent=t; msgEl.style.display=""; } }
+  function busy(b){ if(btn){ btn.disabled=b; btn.classList.toggle("is-busy", b); } }
+
+  // ===== search =====
   let running = false;
-  async function runSearch() {
+  async function run() {
     if (running) return;
-    const slug = norm(input ? input.value : "");
-    if (!slug) { showMsg("slug を入力してください。"); return; }
+    const slug = norm(input?.value);
+    if (!slug) return; // 入力なしでも初期カードは出してある
+    running = true; busy(true); showErr("");
 
-    running = true; setBusy(true); showMsg("");
+    // group -> [false,false]
+    const map = new Map();
+    SHEETS.forEach(s => { if(!map.has(s.g)) map.set(s.g, [false,false]); });
 
-    const groups = new Map();
-    for (const s of SHEETS) if (!groups.has(s.group)) groups.set(s.group, [false, false]);
-
-    let success = 0;
+    let ok = 0;
     try {
-      // 直列で読み込み（レート制限回避）
       for (const s of SHEETS) {
         try {
-          const set = await loadSheetSet(s.sheet);
-          success++;
-          const pair = groups.get(s.group);
-          pair[s.idx] = set.has(slug);
+          const set = await loadSet(s.n);
+          ok++;
+          const pair = map.get(s.g);
+          pair[s.i] = set.has(slug);
         } catch (e) {
-          console.warn("[sheet load failed]", s.sheet, e.message || e);
+          console.warn("sheet fail:", s.n, e.message||e);
         }
       }
-      if (success === 0) {
-        showMsg("取得エラー。時間をおいて再実行してください。");
-        return;
-      }
-      renderResults(slug, groups);
-    } catch (e) {
-      showMsg("取得エラー。時間をおいて再実行してください。");
+      if (ok === 0) { showErr("取得エラー。時間をおいて再実行してください。"); return; }
+      render(slug, map);
+    } catch {
+      showErr("取得エラー。時間をおいて再実行してください。");
     } finally {
-      setBusy(false); running = false;
+      busy(false); running = false;
     }
   }
 
-  if (form instanceof HTMLFormElement) {
-    form.addEventListener("submit", (e) => { e.preventDefault(); runSearch(); });
-  }
-  if (searchBtn && !(form instanceof HTMLFormElement)) {
-    searchBtn.addEventListener("click", (e) => { e.preventDefault(); runSearch(); });
-  }
+  // 初期表示（カード出しておく）
+  renderBlank();
 
-  // 初期の空カード
-  if (resultWrap && !resultWrap.children.length) {
-    const groups = new Map();
-    for (const s of SHEETS) if (!groups.has(s.group)) groups.set(s.group, [false, false]);
-    renderResults("", groups);
+  if (form instanceof HTMLFormElement) {
+    form.addEventListener("submit", (e) => { e.preventDefault(); run(); });
+  } else if (btn) {
+    btn.addEventListener("click", (e) => { e.preventDefault(); run(); });
   }
 })();
