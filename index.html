@@ -1,215 +1,144 @@
-<!-- 既存の <script> の後ろ、</body> の直前に追加 -->
 <script>
-(() => {
-  "use strict";
+(function () {
+  'use strict';
 
-  /* ====== 設定（ここだけあなたの環境用） ====== */
-  // ★あなたのスプレッドシートID（提供いただいたIDをそのまま使用）
-  const FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU";
+  // ===== Google Sheets =====
+  var FILE_ID = "1-2oS--u1jf0fm-m9N_UDf5-aN-oLg_-wyqEpMSdcvcU";
+  var GVIZ = 'https://docs.google.com/spreadsheets/d/' + FILE_ID + '/gviz/tq?tqx=out:json&headers=1&sheet=';
 
-  // 各カテゴリが参照するタブ名（無い方は "" にすれば常に×）
-  const SHEETS = {
-    charge: { label: "チャージ",         al1: "チャージAL①",         al2: "チャージAL②",         dot:"#FDB022" },
-    nft:    { label: "NFTコラボ",        al1: "NFTコラボAL①",        al2: "NFTコラボAL②",        dot:"#12B76A" },
-    guild:  { label: "ギルドミッション",   al1: "ギルドミッションAL①", al2: "ギルドミッションAL②", dot:"#9B8AFB" },
-    greet:  { label: "挨拶タップ",        al1: "挨拶タップAL①",       al2: "挨拶タップAL②",       dot:"#F97066" },
+  // シート名マッピング（列Aに slug 一覧）
+  var SHEETS = {
+    charge: { s1: "チャージAL①", s2: "チャージAL②" },
+    nft:    { s1: "NFTコラボAL①", s2: "NFTコラボAL②" },
+    guild:  { s1: "ギルドミッションAL①", s2: "ギルドミッションAL②" },
+    greet:  { s1: "挨拶タップAL①", s2: "挨拶タップAL②" }
   };
-  /* ============================================ */
 
-  // 既存UIから入力とボタンを拾う（idが無くても動くように広めに拾う）
-  const input =
-    document.querySelector("#slugInput") ||
-    document.querySelector('[name="slug"]') ||
-    document.querySelector('input[type="search"]') ||
-    document.querySelector('input[type="text"]');
+  // ===== UI 参照（ここ以外のDOM=ブレ撮りには触れない）=====
+  var UI = {
+    input:  document.getElementById('slugInput')  || document.querySelector('input[name="slug"]'),
+    btn:    document.getElementById('searchBtn')  || document.querySelector('button[data-role="search"]'),
+    status: document.getElementById('statusSlug') || document.querySelector('[data-role="statusSlug"]'),
+    err:    document.getElementById('alError')    || document.querySelector('[data-role="alError"]'),
+    pills: {
+      charge1: document.getElementById('pill-charge-1') || document.querySelector('[data-pill="charge-1"]'),
+      charge2: document.getElementById('pill-charge-2') || document.querySelector('[data-pill="charge-2"]'),
+      nft1:    document.getElementById('pill-nft-1')    || document.querySelector('[data-pill="nft-1"]'),
+      nft2:    document.getElementById('pill-nft-2')    || document.querySelector('[data-pill="nft-2"]'),
+      guild1:  document.getElementById('pill-guild-1')  || document.querySelector('[data-pill="guild-1"]'),
+      guild2:  document.getElementById('pill-guild-2')  || document.querySelector('[data-pill="guild-2"]'),
+      greet1:  document.getElementById('pill-greet-1')  || document.querySelector('[data-pill="greet-1"]'),
+      greet2:  document.getElementById('pill-greet-2')  || document.querySelector('[data-pill="greet-2"]')
+    }
+  };
 
-  // 「検索」テキストのボタン/リンク全部にバインド
-  const searchButtons = Array.from(document.querySelectorAll("button,a,[role='button']"))
-    .filter(el => /検索/.test((el.textContent || "").trim()));
-
-  // 「照会結果」の見出しの直後に結果ボードを作る（無ければbody先頭）
-  const resultRoot = document.querySelector("#al-results") || createResultRoot();
-  const errorBar   = ensureErrorBar(resultRoot);
-
-  // 最初から空カードを描画（未検索でも表が見える）
-  renderEmptyCards();
-
-  // 操作バインド
-  if (input) {
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); runCheck(); }
-    });
-  }
-  searchButtons.forEach(btn => btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    runCheck();
-  }));
-
-  // ---- 検索実行 ------------------------------------------------------------
-  async function runCheck() {
-    const slug = normalize(input ? input.value : "");
-    if (!slug) { paintAllIdle(); showError(""); return; }
-
-    setLoading(true); showError("");
+  document.addEventListener('DOMContentLoaded', function () {
     try {
-      const db = await loadAllOnce(); // 初回だけ全タブ取得＆キャッシュ
-      // 各カードを更新
-      document.querySelectorAll(".al-card").forEach(card => {
-        const key = card.dataset.key;
-        const has1 = db[key].al1.has(slug);
-        const has2 = db[key].al2.has(slug);
-        paintCard(card, has1, has2);
-      });
+      boot();
     } catch (e) {
-      showError("取得エラー。時間をおいて再実行してください。");
-      paintAllIdle();
-    } finally {
-      setLoading(false);
+      fatal(e);
+    }
+  });
+
+  function boot() {
+    // 初期は全ピルをオフ表示（表は最初から出したまま）
+    setAll(false);
+
+    if (UI.btn) UI.btn.addEventListener('click', run);
+    if (UI.input) {
+      UI.input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') run();
+      });
     }
   }
 
-  // ---- データ取得（CSVで1列目をslugとして読む） ----------------------------
-  let cachePromise = null;
-  function loadAllOnce() {
-    if (cachePromise) return cachePromise;
-    cachePromise = (async () => {
-      const entries = await Promise.all(
-        Object.entries(SHEETS).map(async ([key, cfg]) => {
-          const [al1, al2] = await Promise.all([
-            fetchCsvAsSet(cfg.al1).catch(() => new Set()),
-            fetchCsvAsSet(cfg.al2).catch(() => new Set()),
-          ]);
-          return [key, { al1, al2 }];
-        })
-      );
-      return Object.fromEntries(entries);
-    })();
-    return cachePromise;
+  function normalize(s) {
+    if (!s) return '';
+    s = String(s).trim();
+    s = s.replace(/\u3000/g, '');       // 全角空白除去
+    s = s.replace(/\s+/g, '');          // 途中の空白除去
+    s = s.replace(/_/g, '-');           // _ を - に統一
+    return s.toLowerCase();
   }
 
-  async function fetchCsvAsSet(sheetName) {
-    if (!sheetName) return new Set();
-    const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq`
-              + `?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&t=${Date.now()}`;
-    const res = await fetch(url, { cache: "no-store" });
-    const text = await res.text();
-
-    // 公開設定ミスなどでHTML返った場合を弾く
-    if (!res.ok || /^</.test(text)) throw new Error("sheet fetch failed");
-
-    const set = new Set();
-    text.split(/\r?\n/).forEach(line => {
-      if (!line) return;
-      const slug = normalize(line.split(",")[0]);
-      if (slug) set.add(slug);
-    });
-    return set;
+  function parseGViz(text) {
+    // google.visualization.Query.setResponse({...});
+    var json = text.replace(/^[^{]+/, '').replace(/;?\s*$/, '');
+    return JSON.parse(json);
   }
 
-  // ---- 表示（カード・ピルの状態） -----------------------------------------
-  function renderEmptyCards() {
-    resultRoot.innerHTML = "";
-    const list = document.createElement("div");
-    list.className = "al-card-list";
-
-    Object.entries(SHEETS).forEach(([key, cfg]) => {
-      const card = document.createElement("section");
-      card.className = "al-card";
-      card.dataset.key = key;
-      card.innerHTML = `
-        <div class="al-card__head">
-          <span class="al-dot" style="background:${cfg.dot}"></span>
-          <h3 class="al-title">${cfg.label}</h3>
-        </div>
-        <div class="al-pill-row">
-          <button class="al-pill" data-phase="1" aria-pressed="false" disabled>AL①</button>
-          <button class="al-pill" data-phase="2" aria-pressed="false" disabled>AL②</button>
-        </div>
-      `;
-      list.appendChild(card);
-    });
-
-    resultRoot.appendChild(list);
-    stylePills(); // 最低限の見た目（光る/暗くする）
+  function fetchSheetSet(sheetName) {
+    var url = GVIZ + encodeURIComponent(sheetName) + '&tq=' + encodeURIComponent('select A');
+    return fetch(url, { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(function (txt) {
+        var obj = parseGViz(txt);
+        var rows = obj.table && obj.table.rows ? obj.table.rows : [];
+        var set = Object.create(null);
+        for (var i = 0; i < rows.length; i++) {
+          var v = rows[i].c && rows[i].c[0] ? rows[i].c[0].v : null;
+          var n = normalize(v);
+          if (n) set[n] = true;
+        }
+        return set; // {slug: true, ...}
+      });
   }
 
-  function paintCard(card, has1, has2) {
-    const p1 = card.querySelector('.al-pill[data-phase="1"]');
-    const p2 = card.querySelector('.al-pill[data-phase="2"]');
-    setPillState(p1, has1 ? "on" : "off");
-    setPillState(p2, has2 ? "on" : "off");
+  function setPill(el, on) {
+    if (!el) return;
+    el.classList.remove('is-on', 'is-off');
+    el.classList.add(on ? 'is-on' : 'is-off');
+    var base = el.getAttribute('data-label') || el.textContent.replace(/\s+/g,'');
+    el.textContent = base + (on ? ' ✓' : ' －');
+    el.setAttribute('aria-pressed', on ? 'true' : 'false');
   }
 
-  function paintAllIdle() {
-    document.querySelectorAll(".al-pill").forEach(p => setPillState(p, "idle"));
-  }
-
-  function setPillState(el, state) {
-    const map = {
-      on:  { suffix:" ✓", opacity:1,   glow:"0 0 18px rgba(64,224,146,.55)", pressed:true,  disabled:false },
-      off: { suffix:" ×", opacity:.28, glow:"none",                           pressed:false, disabled:false },
-      idle:{ suffix:"",   opacity:.28, glow:"none",                           pressed:false, disabled:true  },
-    };
-    const s = map[state];
-    el.style.opacity  = s.opacity;
-    el.style.boxShadow= s.glow;
-    el.ariaPressed    = String(s.pressed);
-    el.disabled       = s.disabled;
-    el.textContent    = el.textContent.replace(/[\s✓×]+$/g,"") + s.suffix;
-  }
-
-  function stylePills() {
-    document.querySelectorAll(".al-pill").forEach(el => {
-      el.style.borderRadius = "9999px";
-      el.style.padding = "10px 18px";
-      el.style.fontWeight = "700";
-      el.style.letterSpacing = ".02em";
-      el.style.background = "rgba(255,255,255,.08)";
-      el.style.border = "1px solid rgba(255,255,255,.18)";
-      el.style.transition = "box-shadow .2s, opacity .2s, transform .06s";
-      el.style.color = "rgba(255,255,255,.92)";
-    });
-  }
-
-  function setLoading(is) {
-    document.querySelectorAll(".al-pill").forEach(el => {
-      el.style.transform = is ? "scale(.98)" : "scale(1)";
-    });
+  function setAll(on) {
+    setPill(UI.pills.charge1, on);
+    setPill(UI.pills.charge2, on);
+    setPill(UI.pills.nft1,    on);
+    setPill(UI.pills.nft2,    on);
+    setPill(UI.pills.guild1,  on);
+    setPill(UI.pills.guild2,  on);
+    setPill(UI.pills.greet1,  on);
+    setPill(UI.pills.greet2,  on);
+    if (UI.err) { UI.err.textContent = ''; UI.err.classList.remove('show'); }
   }
 
   function showError(msg) {
-    errorBar.textContent = msg || "";
-    errorBar.style.display = msg ? "block" : "none";
+    if (UI.err) { UI.err.textContent = msg; UI.err.classList.add('show'); }
   }
 
-  // ---- ユーティリティ ------------------------------------------------------
-  function normalize(s) {
-    return (s || "").toString().trim().replace(/\u3000/g," ").toLowerCase();
+  function run() {
+    setAll(false); // 毎回リセット
+    var raw = UI.input && UI.input.value ? UI.input.value : '';
+    var slug = normalize(raw);
+    if (UI.status) UI.status.textContent = slug || '—';
+    if (!slug) return;
+
+    Promise.all([
+      fetchSheetSet(SHEETS.charge.s1), fetchSheetSet(SHEETS.charge.s2),
+      fetchSheetSet(SHEETS.nft.s1),    fetchSheetSet(SHEETS.nft.s2),
+      fetchSheetSet(SHEETS.guild.s1),  fetchSheetSet(SHEETS.guild.s2),
+      fetchSheetSet(SHEETS.greet.s1),  fetchSheetSet(SHEETS.greet.s2)
+    ]).then(function (a) {
+      setPill(UI.pills.charge1, !!a[0][slug]);
+      setPill(UI.pills.charge2, !!a[1][slug]);
+      setPill(UI.pills.nft1,    !!a[2][slug]);
+      setPill(UI.pills.nft2,    !!a[3][slug]);
+      setPill(UI.pills.guild1,  !!a[4][slug]);
+      setPill(UI.pills.guild2,  !!a[5][slug]);
+      setPill(UI.pills.greet1,  !!a[6][slug]);
+      setPill(UI.pills.greet2,  !!a[7][slug]);
+    }).catch(function (e) {
+      console.error(e);
+      showError('取得エラー。時間をおいて再実行してください。');
+    });
   }
 
-  function createResultRoot() {
-    const after = Array.from(document.querySelectorAll("*"))
-      .find(n => /照会結果/.test(n.textContent||""));
-    const root = document.createElement("section");
-    root.id = "al-results";
-    root.style.marginTop = "8px";
-    if (after && after.parentElement) after.parentElement.insertBefore(root, after.nextSibling);
-    else document.body.prepend(root);
-    return root;
-  }
-
-  function ensureErrorBar(root) {
-    let bar = root.querySelector(".al-error");
-    if (!bar) {
-      bar = document.createElement("p");
-      bar.className = "al-error";
-      bar.style.color = "#FFB4B4";
-      bar.style.margin = "10px 16px -6px";
-      bar.style.fontWeight = "600";
-      bar.style.display = "none";
-      root.prepend(bar);
-    }
-    return bar;
+  function fatal(e){
+    console.error(e);
+    showError('初期化エラー');
   }
 })();
 </script>
