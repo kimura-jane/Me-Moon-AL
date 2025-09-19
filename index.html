@@ -395,5 +395,43 @@ async function loadRandomBlur(){
 btnRefresh.addEventListener('click', loadRandomBlur);
 loadRandomBlur();
 </script>
+  <script>
+const NAME_MAP = {
+  'ryo-at-me-moon': 'RYO@Me-Moon',
+  'memoon-ao': 'MeMoon_Ao'
+};
+
+// "2025-09-06_masa_001.jpeg" → "2025年9月6日 masa (001)"
+function prettyLabel(file) {
+  const m = file.match(/^(\d{4})-(\d{2})-(\d{2})_([a-z0-9\-]+)_(\d{3})\.(?:jpg|jpeg|png)$/i);
+  if (!m) return file;
+  const [, y, mo, d, slug, seq] = m;
+  const name = NAME_MAP[slug] || slug;
+  return `${+y}年${+mo}月${+d}日 ${name} (${seq})`;
+}
+
+// manifest.jsonから読み込んで描画
+async function initBlurs(){
+  const res = await fetch('./blurs/manifest.json');
+  const { images = [] } = await res.json();
+  const root = document.querySelector('#blurs');   // ← ギャラリーの入れ物 (div#blurs) を用意してね
+  images.forEach(({file}) => root.appendChild(renderImage(file)));
+}
+
+function renderImage(file){
+  const fig = document.createElement('figure');
+  const img = new Image();
+  const label = prettyLabel(file);
+  img.src = `./blurs/${file}`;
+  img.alt = label;
+  img.loading = 'lazy';
+  const cap = document.createElement('figcaption');
+  cap.textContent = label;
+  fig.append(img, cap);
+  return fig;
+}
+
+initBlurs();
+</script>
 </body>
 </html>
