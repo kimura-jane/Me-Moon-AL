@@ -77,8 +77,11 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-syst
 @media (min-width: 480px){
   #refreshBlur{ height: 56px; font-size: 19px; }
 }
-/* ==== ALピルのカウントと丸印を消す（最優先） ==== */
-.pill::after,
-.pill::before {
+/* --- ALピルの (1) を完全に消す --- */
+.pill[data-count]::after,
+.pill .count::after {
   content: '' !important;
+}
+.pill .count {          /* もし数値を包むspan等があれば不可視に */
+  display: none !important;
 }
