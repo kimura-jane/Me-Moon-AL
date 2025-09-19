@@ -1,38 +1,49 @@
 (()=>{'use strict';
-// ページ側の要素ID（違っていたらここだけ直す）
-const IMG ='#blurImg';      // 画像 <img>
-const CAP ='#blurCap';      // キャプション表示の要素
-const BTN ='#btnRefresh';   // 「次のブレ」ボタン
+// あなたの要素ID（必要ならここだけ合わせてね）
+const IMG ='#blurImg';
+const CAP ='#blurCap';
+const BTN ='#btnRefresh';
 
-// "YYYY-M-D_name_###.jpg" → "YYYY年M月D日name(###)" に整形
-function toJpLabel(file){
-  const m = file.match(/(\d{4})-(\d{1,2})-(\d{1,2})_([^_]+)_(\d{3})\.(?:jpe?g|png|webp)$/i);
-  if(!m) return file;
-  const [, y,M,D,name,idx] = m;
+// "YYYY-M-D_name_###.ext" → "YYYY年M月D日name(###)"
+function toJpLabelFromFilename(s){
+  if(!s) return null;
+  const f = String(s).split('/').pop(); // 末尾ファイル名だけ
+  const m = f.match(/(\d{4})-(\d{1,2})-(\d{1,2})_([^_]+)_(\d{3})\.(?:jpe?g|png|webp)$/i);
+  if(!m) return null;
+  const [, y, M, D, name, idx] = m;
   return `${+y}年${+M}月${+D}日${name}(${idx})`;
 }
 
-async function init(){
+function formatNow(){
   const img = document.querySelector(IMG);
   const cap = document.querySelector(CAP);
-  const btn = document.querySelector(BTN);
-  if(!img || !cap) return; // 対象が無いページでは何もしない
+  if(!img || !cap) return;
 
-  // manifest.json を読み込み（キャッシュ回避クエリ付き）
-  const res = await fetch('./blurs/manifest.json?ts=' + Date.now());
-  if(!res.ok) return;
-  const man  = await res.json();
-  const list = (man.images || []).map(x => typeof x==='string' ? x : x.file).filter(Boolean);
+  // 画像のsrcから優先してパース、ダメなら現在のテキストから
+  let label = toJpLabelFromFilename(img.src) || toJpLabelFromFilename(cap.textContent?.trim());
+  if(label) cap.textContent = label;
+}
 
-  function show(){
-    if(!list.length) return;
-    const pick = list[Math.floor(Math.random()*list.length)];
-    img.src = './blurs/' + pick;
-    cap.textContent = toJpLabel(pick);
-  }
+function init(){
+  const img = document.querySelector(IMG);
+  const cap = document.querySelector(CAP);
+  if(!img || !cap) return;
 
-  btn?.addEventListener('click', show);
-  show();
+  // 初期表示を整形
+  formatNow();
+
+  // 1) キャプションが他スクリプトで書き換わったら即整形
+  new MutationObserver(formatNow)
+    .observe(cap, {childList:true, characterData:true, subtree:true});
+
+  // 2) 画像srcが変わったら整形
+  new MutationObserver(formatNow)
+    .observe(img, {attributes:true, attributeFilter:['src']});
+
+  // 3) クリック時のフォールバック（既存ハンドラの後に実行）
+  document.querySelector(BTN)?.addEventListener('click', () => {
+    setTimeout(formatNow, 0);
+  }, false);
 }
 
 document.addEventListener('DOMContentLoaded', init);
