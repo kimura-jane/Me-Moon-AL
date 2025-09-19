@@ -1,15 +1,38 @@
 {
-  "updated": "2025-09-18",
+  "updated": "2025-09-19",
   "images": [
     { "file": "2025-09-01_yokot_001.jpeg" },
     { "file": "2025-09-01_hidamari-neko_001.jpeg" },
     { "file": "2025-09-01_kimura_001.jpeg" },
     { "file": "2025-09-01_u-masaki_001.jpeg" },
     { "file": "2025-09-01_riko_001.jpeg" },
+
     { "file": "2025-09-02_kimura_001.jpeg" },
     { "file": "2025-09-02_u-masaki_001.jpeg" },
     { "file": "2025-09-02_riko_001.jpeg" },
+
     { "file": "2025-09-03_hide-g_001.jpeg" },
-    { "file": "2025-09-03_riko_001.jpeg" }
+    { "file": "2025-09-03_riko_001.jpeg" },
+
+    { "file": "2025-09-03_ohisama_001.jpeg" },
+    { "file": "2025-09-03_ohisama_002.jpeg" },
+
+    { "file": "2025-09-04_hide-g_001.jpeg" },
+    { "file": "2025-09-04_anonymous_001.jpeg" },
+    { "file": "2025-09-04_waraigoe_001.jpeg" },
+    { "file": "2025-09-04_waraigoe_002.jpeg" },
+
+    { "file": "2025-09-05_riko_001.jpeg" },
+
+    { "file": "2025-09-06_papico-yoshida_001.jpeg" },
+    { "file": "2025-09-06_masa_001.jpeg" },
+    { "file": "2025-09-06_ryo-at-me-moon_001.jpeg" },
+
+    { "file": "2025-09-07_masa_001.jpeg" },
+    { "file": "2025-09-07_ohisama_001.jpeg" },
+
+    { "file": "2025-09-08_demo_001.jpeg" },
+    { "file": "2025-09-08_dino_001.jpeg" },
+    { "file": "2025-09-08_memoon-ao_001.jpeg" }
   ]
 }
