@@ -85,3 +85,13 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-syst
 .pill .count {          /* もし数値を包むspan等があれば不可視に */
   display: none !important;
 }
+/* === ALピルのカウント(1)を完全に非表示にする === */
+.pill[data-count]::before,
+.pill[data-count]::after,
+.pill .count::before,
+.pill .count::after {
+  content: none !important;
+}
+.pill .count {
+  display: none !important;
+}
