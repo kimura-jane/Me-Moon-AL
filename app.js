@@ -66,6 +66,7 @@
     el.classList.add(on ? 'is-on' : 'is-off');
     const base = el.getAttribute('data-label') || el.textContent.replace(/\s+/g,'');
     el.textContent = base + (on ? ' ✓' : ' －');
+    el.removeAttribute('data-count');
     el.setAttribute('aria-pressed', on ? 'true':'false');
   }
   function setAll(on){
