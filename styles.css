@@ -122,3 +122,13 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-syst
 /* 保険で（1）を完全に隠す */
 .pill .count{ display:none !important; }
 .pill .count::after{ content:'' !important; }
+/* (1) を完全に非表示 */
+.pill .count{ display:none !important; }
+.pill .count::before,
+.pill .count::after{ content:'' !important; }
+.pill[data-count]::after{ content:'' !important; } /* 属性で付く場合の保険 */
+.pills{ display:flex; gap:12px; flex-wrap:nowrap; }
+.pills .pill{ flex:1 1 0; min-width:0; white-space:nowrap; }
+
+
+
