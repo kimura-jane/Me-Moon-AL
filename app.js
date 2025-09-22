@@ -84,7 +84,8 @@
     // (1) を完全に消す
     const countEl = pill.querySelector('.count');
     if (countEl) countEl.textContent = '';
-    pill.removeAttribute('data-count');
+    pill.removeAttribute('data-count');               // 擬似要素の(1)対策
+if (countEl){ countEl.textContent=''; countEl.style.display='none'; } // DOM側も消す
   }
 
   function setAllOff() {
