@@ -142,24 +142,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 })();
-/* ==== ALピルの価格表示 ==== */
-.pill{
-  display: inline-flex;
-  align-items: center;
-  gap: .4em;
-}
-.pill .price{
-  font-weight: 700;
-  font-size: .92em;
-  opacity: .9;
-  letter-spacing: .02em;
-}
-
-/* ==== (1) を完全に隠す（保険） ==== */
-.pill[data-count]::after{ content:'' !important; }
-.pill .count{ display:none !important; }
-.pill .count::after{ content:'' !important; display:none !important; }
-
-@media (min-width:480px){
-  .pill .price{ font-size: 1em; }
-}
