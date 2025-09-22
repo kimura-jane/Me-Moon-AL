@@ -141,4 +141,52 @@ document.addEventListener('DOMContentLoaded', () => {
       showError('取得エラー。時間をおいて再実行してください。');
     });
   }
-})();
+})
+// === 価格 ===
+const PRICE_MAP = {
+  charge: { al1: '¥3,000', al2: '¥2,000' },
+  nft:    { al1: '¥3,000', al2: '¥2,000' },
+  guild:  { al1: '¥3,000', al2: '¥2,000' },
+  greet:  { al1: '¥5,000', al2: '¥3,000' }
+};
+
+// 価格を各ピルへ差し込み
+function applyPrices(){
+  for (const [key, set] of Object.entries(PRICE_MAP)){
+    const card = document.querySelector(`.card[data-key="${key}"]`);
+    if(!card) continue;
+    for (const [type, price] of Object.entries(set)){
+      const pill = card.querySelector(`.pill[data-type="${type}"]`);
+      if(!pill) continue;
+      let el = pill.querySelector('.price');
+      if(!el){
+        el = document.createElement('span');
+        el.className = 'price';
+        const label = pill.querySelector('.label');
+        (label?.nextSibling)
+          ? pill.insertBefore(el, label.nextSibling)
+          : pill.appendChild(el);
+      }
+      el.textContent = price;
+    }
+  }
+}
+
+// 初期化時に価格をセット
+document.addEventListener('DOMContentLoaded', applyPrices);
+
+// （1）を出さないように setPill も調整
+function setPill(cardKey, type, count){
+  const card = document.querySelector(`.card[data-key="${cardKey}"]`);
+  const pill = card.querySelector(`.pill[data-type="${type}"]`);
+  pill.classList.remove('on','off');
+  if(count > 0){
+    pill.classList.add('on');
+    pill.querySelector('.mark').textContent = '○';
+  }else{
+    pill.classList.add('off');
+    pill.querySelector('.mark').textContent = '×';
+  }
+  const c = pill.querySelector('.count');
+  if(c){ c.textContent = ''; } // 常に空にする＝（1）を表示しない
+}
