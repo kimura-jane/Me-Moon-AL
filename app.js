@@ -175,18 +175,50 @@ function applyPrices(){
 // 初期化時に価格をセット
 document.addEventListener('DOMContentLoaded', applyPrices);
 
-// （1）を出さないように setPill も調整
+// （1）を出さないように setPill も調整ない
+}
 function setPill(cardKey, type, count){
   const card = document.querySelector(`.card[data-key="${cardKey}"]`);
-  const pill = card.querySelector(`.pill[data-type="${type}"]`);
+  const pill = card?.querySelector(`.pill[data-type="${type}"]`);
+  if(!pill) return;
+
   pill.classList.remove('on','off');
+
+  const markEl  = pill.querySelector('.mark');
+  const countEl = pill.querySelector('.count');
+
   if(count > 0){
     pill.classList.add('on');
-    pill.querySelector('.mark').textContent = '○';
+    if (markEl)  markEl.textContent = '○';
   }else{
     pill.classList.add('off');
-    pill.querySelector('.mark').textContent = '×';
+    if (markEl)  markEl.textContent = '×';
   }
-  const c = pill.querySelector('.count');
-  if(c){ c.textContent = ''; } // 常に空にする＝（1）を表示しない
+
+  // (1) は出さない
+  if (countEl) countEl.textContent = '';
 }
+// === 価格表 ===
+const PRICE_MAP = {
+  charge: { al1: '¥3,000', al2: '¥2,000' },
+  nft:    { al1: '¥3,000', al2: '¥2,000' },
+  guild:  { al1: '¥3,000', al2: '¥2,000' },
+  greet:  { al1: '¥5,000', al2: '¥3,000' },
+};
+
+// DOM準備後に各ALボタンへ価格をセット（.price が無ければ作る）
+document.addEventListener('DOMContentLoaded', () => {
+  for (const [cardKey, types] of Object.entries(PRICE_MAP)) {
+    for (const [type, price] of Object.entries(types)) {
+      const pill = document.querySelector(`.card[data-key="${cardKey}"] .pill[data-type="${type}"]`);
+      if (!pill) continue;
+      let slot = pill.querySelector('.price');
+      if (!slot) {
+        slot = document.createElement('span');
+        slot.className = 'price';
+        pill.appendChild(slot);
+      }
+      slot.textContent = price;
+    }
+  }
+});
