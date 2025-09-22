@@ -59,16 +59,54 @@
         return set; // {slug:true,...}
       });
   }
+// === AL価格 ===
+const PRICE_MAP = {
+  '#pill-charge-1': '¥3,000',
+  '#pill-charge-2': '¥2,000',
+  '#pill-nft-1'  : '¥3,000',
+  '#pill-nft-2'  : '¥2,000',
+  '#pill-guild-1': '¥3,000',
+  '#pill-guild-2': '¥2,000',
+  '#pill-greet-1': '¥5,000',
+  '#pill-greet-2': '¥3,000'
+};
 
-  function setPill(el, on){
-    if(!el) return;
-    el.classList.remove('is-on','is-off');
-    el.classList.add(on ? 'is-on' : 'is-off');
-    const base = el.getAttribute('data-label') || el.textContent.replace(/\s+/g,'');
-    el.textContent = base + (on ? ' ✓' : ' －');
-    el.removeAttribute('data-count');
-    el.setAttribute('aria-pressed', on ? 'true':'false');
+// DOM準備後にボタンへ価格をセット
+document.addEventListener('DOMContentLoaded', () => {
+  for (const [sel, price] of Object.entries(PRICE_MAP)) {
+    const el = document.querySelector(sel);
+    if (el) el.dataset.price = price;
   }
+});
+  function setPill(el, on){
+  if(!el) return;
+
+  // 見た目状態
+  el.classList.remove('is-on','is-off');
+  el.classList.add(on ? 'is-on' : 'is-off');
+
+  // ベース文字列を取得し、末尾の (数字) を除去
+  const baseRaw = el.getAttribute('data-label') || el.textContent || '';
+  const base    = baseRaw.replace(/\s*\(\d+\)\s*$/, '');
+
+  // 表示を一旦テキストで作成（○/×は維持）
+  el.textContent = `${base} ${on ? '○' : '×'}`;
+
+  // data-count 起因の疑似要素を無効化
+  el.removeAttribute('data-count');
+
+  // 価格を付与（既存の .price は除去してから付け直し）
+  el.querySelector('.price')?.remove();
+  const price = el.dataset.price;
+  if (price){
+    const sp = document.createElement('span');
+    sp.className = 'price';
+    sp.textContent = price;
+    el.appendChild(sp);
+  }
+
+  el.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
   function setAll(on){
     setPill(UI.pills.charge1,on); setPill(UI.pills.charge2,on);
     setPill(UI.pills.nft1,on);    setPill(UI.pills.nft2,on);
@@ -104,3 +142,24 @@
     });
   }
 })();
+/* ==== ALピルの価格表示 ==== */
+.pill{
+  display: inline-flex;
+  align-items: center;
+  gap: .4em;
+}
+.pill .price{
+  font-weight: 700;
+  font-size: .92em;
+  opacity: .9;
+  letter-spacing: .02em;
+}
+
+/* ==== (1) を完全に隠す（保険） ==== */
+.pill[data-count]::after{ content:'' !important; }
+.pill .count{ display:none !important; }
+.pill .count::after{ content:'' !important; display:none !important; }
+
+@media (min-width:480px){
+  .pill .price{ font-size: 1em; }
+}
